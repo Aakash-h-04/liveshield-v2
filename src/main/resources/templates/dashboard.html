@@ -173,7 +173,16 @@
             <h2>Biosecurity Command Center</h2>
             <p>Unified real-time surveillance across livestock batches, perimeter gates, compliance audits and threat dispatches.</p>
           </div>
-          <div style="display: flex; gap: 10px; align-items: center;">
+          <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+            <a class="button primary" href="/visitors/scan" style="background: var(--green); color: #ffffff; display: inline-flex; align-items: center; gap: 6px; font-weight: 600;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              Scan Visitor QR
+            </a>
             <a class="button secondary" href="/database">Database Console</a>
             <a class="button primary" href="/farms/new">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
@@ -184,21 +193,8 @@
 
         <!-- QUICK ACCESS OPERATIONS HUD -->
         <section class="quick-hud-grid">
-          <a th:if="${!#lists.isEmpty(farms)}" th:href="@{/risk-assessment(farmId=${farms[0].id})}" class="quick-hud-item">
-            <div class="quick-hud-icon">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
-                <path d="m9 12 2 2 4-4"></path>
-              </svg>
-            </div>
-            <div>
-              <div class="quick-hud-title">Run Risk Audit</div>
-              <div class="quick-hud-sub">Recalculate &amp; alert grid</div>
-            </div>
-          </a>
-
-          <a href="/visitors/smart-gate" class="quick-hud-item">
-            <div class="quick-hud-icon" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; border-color: rgba(14, 165, 233, 0.3);">
+          <a href="/visitors/scan" class="quick-hud-item">
+            <div class="quick-hud-icon" style="background: rgba(16, 185, 129, 0.12); color: #059669; border-color: rgba(16, 185, 129, 0.3);">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <rect x="3" y="3" width="7" height="7"></rect>
                 <rect x="14" y="3" width="7" height="7"></rect>
@@ -207,8 +203,20 @@
               </svg>
             </div>
             <div>
-              <div class="quick-hud-title">Smart Gate Scanner</div>
-              <div class="quick-hud-sub">Face &amp; QR access control</div>
+              <div class="quick-hud-title">Scan Visitor QR</div>
+              <div class="quick-hud-sub">Instant camera verification</div>
+            </div>
+          </a>
+
+          <a href="/visitors/smart-gate" class="quick-hud-item">
+            <div class="quick-hud-icon" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; border-color: rgba(14, 165, 233, 0.3);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="quick-hud-title">Smart Gate Terminal</div>
+              <div class="quick-hud-sub">Dual biometric + QR</div>
             </div>
           </a>
 

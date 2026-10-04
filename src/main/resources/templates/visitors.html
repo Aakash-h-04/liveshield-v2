@@ -106,8 +106,17 @@
           </div>
 
           <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-            <a href="/visitors/smart-gate" class="button primary" style="background: var(--green-dark); display: inline-flex; align-items: center; gap: 6px;">
-              ⚡ Smart Gate Admission
+            <a href="/visitors/scan" class="button primary" style="background: var(--green); color: #ffffff; display: inline-flex; align-items: center; gap: 8px; font-weight: 600;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+              Scan Visitor QR
+            </a>
+            <a href="/visitors/smart-gate" class="button secondary" style="display: inline-flex; align-items: center; gap: 6px;">
+              ⚡ Smart Gate
             </a>
             <a href="/visitors/register" class="button secondary">
               + Register Visitor
@@ -388,7 +397,9 @@
             </div>
 
             <div class="form-actions">
-              <a href="/visitors/scan" class="button secondary"> Scan Visitor </a>
+              <a href="/visitors/scan" class="button primary" style="width: 100%; text-align: center; background: var(--green); color: #ffffff; font-weight: 600;">
+                Launch QR Scanner 📷
+              </a>
             </div>
           </div>
 

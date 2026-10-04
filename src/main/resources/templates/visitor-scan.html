@@ -2,66 +2,225 @@
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
   <head>
     <meta charset="UTF-8" />
-
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LiveShield · Scan Visitor QR</title>
 
-    <title>LiveShield · Scan Visitor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
 
     <link rel="stylesheet" href="/css/app.css" />
     <script src="/js/theme.js"></script>
 
     <style>
-      .scanner-box {
-        max-width: 620px;
+      .scanner-container {
+        max-width: 680px;
         margin: 0 auto;
       }
 
-      .camera-frame {
+      .camera-viewport {
         position: relative;
         width: 100%;
         aspect-ratio: 4 / 3;
-        background: #18221d;
-        border-radius: 8px;
+        background: #090d16;
+        border-radius: 12px;
         overflow: hidden;
+        border: 1px solid var(--line);
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
       }
 
       #camera {
         width: 100%;
         height: 100%;
         object-fit: cover;
+        display: block;
       }
 
-      .scan-frame {
+      /* Viewfinder reticle overlay */
+      .reticle-box {
         position: absolute;
-        width: 220px;
-        height: 220px;
+        width: 240px;
+        height: 240px;
         left: 50%;
         top: 50%;
         transform: translate(-50%, -50%);
-        border: 2px solid #ffffff;
-        border-radius: 12px;
-        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.25);
         pointer-events: none;
       }
 
-      .scan-status {
-        margin-top: 15px;
-        padding: 12px;
-        border-radius: 6px;
-        background: var(--green-soft);
-        color: var(--ink);
-        font-size: 14px;
+      /* 4 High-tech neon corner brackets */
+      .corner-bracket {
+        position: absolute;
+        width: 28px;
+        height: 28px;
+        border-color: #10b981;
+        border-style: solid;
+        pointer-events: none;
+        filter: drop-shadow(0 0 6px rgba(16, 185, 129, 0.7));
+      }
+      .corner-bracket.tl {
+        top: 0;
+        left: 0;
+        border-width: 3px 0 0 3px;
+        border-top-left-radius: 6px;
+      }
+      .corner-bracket.tr {
+        top: 0;
+        right: 0;
+        border-width: 3px 3px 0 0;
+        border-top-right-radius: 6px;
+      }
+      .corner-bracket.bl {
+        bottom: 0;
+        left: 0;
+        border-width: 0 0 3px 3px;
+        border-bottom-left-radius: 6px;
+      }
+      .corner-bracket.br {
+        bottom: 0;
+        right: 0;
+        border-width: 0 3px 3px 0;
+        border-bottom-right-radius: 6px;
       }
 
-      .scanner-actions {
-        margin-top: 18px;
+      /* Animated scanning laser line */
+      .scan-laser-line {
+        position: absolute;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, transparent, #10b981, #34d399, #10b981, transparent);
+        box-shadow: 0 0 12px #10b981, 0 0 24px rgba(16, 185, 129, 0.8);
+        animation: laserScan 2.4s ease-in-out infinite alternate;
+        pointer-events: none;
+      }
+
+      @keyframes laserScan {
+        0% { top: 6%; opacity: 0.3; }
+        50% { opacity: 1; }
+        100% { top: 94%; opacity: 0.3; }
+      }
+
+      /* Center crosshair dot */
+      .reticle-center-dot {
+        position: absolute;
+        width: 6px;
+        height: 6px;
+        background: rgba(16, 185, 129, 0.8);
+        border-radius: 50%;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        box-shadow: 0 0 8px #10b981;
+      }
+
+      /* Camera state banner */
+      .scan-status-banner {
+        margin-top: 16px;
+        padding: 12px 16px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--green-soft);
+        color: var(--green-dark);
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        transition: all 0.25s ease;
+      }
+
+      .scan-status-banner.error {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        border-color: rgba(239, 68, 68, 0.3);
+      }
+
+      .scan-status-banner.warning {
+        background: rgba(245, 158, 11, 0.1);
+        color: #d97706;
+        border-color: rgba(245, 158, 11, 0.3);
+      }
+
+      .scan-status-banner.success {
+        background: rgba(16, 185, 129, 0.18);
+        color: #059669;
+        border-color: #10b981;
+        font-weight: 600;
+      }
+
+      .scanner-controls {
+        margin-top: 16px;
         display: flex;
         gap: 10px;
         flex-wrap: wrap;
       }
 
-      .manual-lookup {
-        margin-top: 25px;
+      .scan-option-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 8px;
+      }
+
+      .scan-tab-btn {
+        background: transparent;
+        border: none;
+        padding: 6px 14px;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--muted);
+        cursor: pointer;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+      }
+
+      .scan-tab-btn.active {
+        background: var(--green-soft);
+        color: var(--green-dark);
+      }
+
+      .upload-dropzone {
+        border: 2px dashed var(--line);
+        border-radius: 12px;
+        padding: 32px 20px;
+        text-align: center;
+        background: var(--bg);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .upload-dropzone:hover {
+        border-color: var(--green);
+        background: var(--green-soft);
+      }
+
+      .quick-test-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 12px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        color: var(--ink);
+        text-decoration: none;
+        font-size: 12px;
+        font-family: 'JetBrains Mono', monospace;
+        transition: all 0.2s ease;
+      }
+
+      .quick-test-badge:hover {
+        border-color: var(--green);
+        background: var(--green-soft);
+        color: var(--green-dark);
+        transform: translateY(-1px);
       }
 
       #qr-canvas {
@@ -76,7 +235,6 @@
       <aside class="sidebar">
         <div class="brand">
           <div class="brand-mark">LS</div>
-
           <div>
             <strong>LiveShield</strong>
             <small>Biosecurity Portal</small>
@@ -85,12 +243,48 @@
 
         <nav>
           <a href="/"> Dashboard </a>
+          <a href="/database"> Database </a>
 
-          <a class="active" href="/visitors"> Visitors </a>
+          <a
+            th:if="${!#lists.isEmpty(farms)}"
+            th:href="@{/livestock(farmId=${farms[0].id})}"
+          >
+            Livestock
+          </a>
+
+          <a
+            th:if="${!#lists.isEmpty(farms)}"
+            th:href="@{/veterinary(farmId=${farms[0].id})}"
+          >
+            Veterinary
+          </a>
+
+          <a
+            th:if="${!#lists.isEmpty(farms)}"
+            th:href="@{/daily-log(farmId=${farms[0].id})}"
+          >
+            Daily Log
+          </a>
+
+          <a
+            th:if="${!#lists.isEmpty(farms)}"
+            th:href="@{/risk-assessment(farmId=${farms[0].id})}"
+          >
+            Risk Assessment
+          </a>
+
+          <a href="/alerts"> Alerts </a>
+
+          <a
+            th:if="${!#lists.isEmpty(farms)}"
+            th:href="@{/compliance-passport(farmId=${farms[0].id})}"
+          >
+            Compliance Passport
+          </a>
 
           <a href="/guides"> Guides </a>
 
-          <a href="/alerts"> Alerts </a>
+          <a class="active" href="/visitors"> Visitors </a>
         </nav>
 
         <div class="sidebar-bottom">
@@ -98,195 +292,342 @@
         </div>
       </aside>
 
-      <!-- MAIN -->
+      <!-- MAIN CONTENT -->
       <main class="main">
         <header class="topbar">
           <div>
             <span class="eyebrow"> VISITOR MANAGEMENT </span>
-
-            <h1>Scan Visitor</h1>
+            <h1>Scan Visitor QR</h1>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <a href="/visitors" class="button secondary">← Visitors</a>
+            <a href="/visitors/smart-gate" class="button secondary">⚡ Smart Gate</a>
+            <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle theme">
+              <span id="theme-icon">🌙</span>
+            </button>
           </div>
         </header>
 
+        <!-- WELCOME BANNER -->
         <section class="welcome">
           <div>
-            <h2>Scan Visitor QR</h2>
-
+            <h2>Instant Visitor QR Pass Scanner</h2>
             <p>
-              Scan the visitor's permanent LiveShield QR code to retrieve their
-              registered profile.
+              Present the visitor's physical badge or smartphone QR code to the scanner.
+              Their registered biosecurity credentials, licenses, and visit records will load immediately.
             </p>
           </div>
-
-          <a href="/visitors" class="button secondary"> ← Visitors </a>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <a href="/visitors/register" class="button secondary">+ Register New Visitor</a>
+            <a href="/visitors" class="button secondary">Active Log</a>
+          </div>
         </section>
 
-        <section class="panel scanner-box">
-          <div class="panel-head">
-            <div>
-              <h3>Camera Scanner</h3>
-
-              <p>Position the visitor's QR code inside the frame.</p>
-            </div>
-          </div>
-
-          <div class="camera-frame">
-            <video id="camera" autoplay muted playsinline></video>
-
-            <div class="scan-frame"></div>
-          </div>
-
-          <canvas id="qr-canvas"> </canvas>
-
-          <div id="scan-status" class="scan-status">Starting camera...</div>
-
-          <div class="scanner-actions">
-            <button id="start-camera" class="button primary" type="button">
-              Start Camera
+        <!-- SCANNER SECTION -->
+        <div class="scanner-container">
+          <!-- TABS: LIVE CAMERA vs UPLOAD IMAGE -->
+          <div class="scan-option-tabs">
+            <button id="tab-camera" class="scan-tab-btn active" type="button" onclick="switchScanMode('camera')">
+              📷 Live Camera
             </button>
-
-            <button id="stop-camera" class="button secondary" type="button">
-              Stop Camera
+            <button id="tab-upload" class="scan-tab-btn" type="button" onclick="switchScanMode('upload')">
+              📁 Upload QR Image
+            </button>
+            <button id="tab-manual" class="scan-tab-btn" type="button" onclick="switchScanMode('manual')">
+              ⌨️ Manual Lookup
             </button>
           </div>
 
-          <!-- MANUAL FALLBACK -->
-          <div class="manual-lookup">
+          <!-- 1. LIVE CAMERA SCANNER -->
+          <section id="panel-camera" class="panel">
             <div class="panel-head">
               <div>
-                <h3>Manual lookup</h3>
+                <h3>Camera Viewfinder</h3>
+                <p>Align the QR code within the highlighted corner brackets.</p>
+              </div>
+              <span id="camera-badge" class="badge verified">Active</span>
+            </div>
 
-                <p>Use this if the camera cannot scan the QR code.</p>
+            <div class="camera-viewport">
+              <video id="camera" autoplay muted playsinline></video>
+
+              <!-- High-tech Viewfinder Overlay -->
+              <div class="reticle-box">
+                <div class="corner-bracket tl"></div>
+                <div class="corner-bracket tr"></div>
+                <div class="corner-bracket bl"></div>
+                <div class="corner-bracket br"></div>
+                <div class="scan-laser-line"></div>
+                <div class="reticle-center-dot"></div>
               </div>
             </div>
 
-            <form action="/visitors/lookup" method="get">
-              <label>
-                Visitor ID
+            <!-- Hidden canvas for processing frame pixels -->
+            <canvas id="qr-canvas"></canvas>
 
+            <div id="scan-status" class="scan-status-banner">
+              <span>●</span>
+              <span id="scan-status-text">Starting camera stream...</span>
+            </div>
+
+            <div class="scanner-controls">
+              <button id="start-camera" class="button primary" type="button">
+                Start Camera
+              </button>
+              <button id="stop-camera" class="button secondary" type="button">
+                Stop Camera
+              </button>
+              <button id="flip-camera" class="button secondary" type="button" title="Switch between front and rear cameras">
+                🔄 Flip Camera
+              </button>
+            </div>
+          </section>
+
+          <!-- 2. FILE UPLOAD SCANNER -->
+          <section id="panel-upload" class="panel" style="display: none;">
+            <div class="panel-head">
+              <div>
+                <h3>Upload QR Code Image</h3>
+                <p>Select a photo or screenshot of a visitor QR code from your device.</p>
+              </div>
+            </div>
+
+            <div class="upload-dropzone" onclick="document.getElementById('qr-file-input').click()">
+              <input
+                type="file"
+                id="qr-file-input"
+                accept="image/*"
+                style="display: none;"
+                onchange="handleImageUpload(event)"
+              />
+              <div style="font-size: 36px; margin-bottom: 8px;">📸</div>
+              <strong>Click to browse or drop QR image here</strong>
+              <p style="font-size: 12px; color: var(--muted); margin-top: 4px;">
+                Supports PNG, JPG, WEBP screenshots and camera photos
+              </p>
+            </div>
+
+            <div id="upload-status" class="scan-status-banner" style="display: none; margin-top: 14px;">
+              <span>●</span>
+              <span id="upload-status-text">Ready to upload</span>
+            </div>
+          </section>
+
+          <!-- 3. MANUAL LOOKUP -->
+          <section id="panel-manual" class="panel" style="display: none;">
+            <div class="panel-head">
+              <div>
+                <h3>Manual ID Lookup</h3>
+                <p>Enter the visitor's permanent LiveShield ID directly.</p>
+              </div>
+            </div>
+
+            <form action="/visitors/lookup" method="get" style="display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap;">
+              <label style="flex: 1; min-width: 260px; margin-bottom: 0;">
+                <span style="display: block; margin-bottom: 6px; font-weight: 600; font-size: 13px;">Visitor ID</span>
                 <input
                   type="text"
                   name="visitorCode"
+                  id="manual-visitor-code"
                   placeholder="VST-XXXX-XXXX-XXXX"
+                  style="text-transform: uppercase; font-family: 'JetBrains Mono', monospace;"
                   required
                 />
               </label>
-
-              <div class="form-actions">
-                <button type="submit" class="button secondary">
-                  Find Visitor
-                </button>
-              </div>
+              <button type="submit" class="button primary" style="padding: 10px 18px;">
+                Find Profile →
+              </button>
             </form>
-          </div>
-        </section>
+          </section>
+
+          <!-- QUICK DEMO VISITORS (FOR TESTING & CONVENIENCE) -->
+          <section class="panel" style="margin-top: 20px;">
+            <div class="panel-head">
+              <div>
+                <h4 style="font-size: 14px; margin: 0 0 4px;">Quick Demo Profiles (Instant Test)</h4>
+                <p style="font-size: 12px; color: var(--muted); margin: 0;">
+                  Click any verified registered visitor to simulate an instant QR scan:
+                </p>
+              </div>
+            </div>
+
+            <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+              <a href="/visitors/lookup?visitorCode=VST-9KLF-JC2S-SXCF" class="quick-test-badge">
+                <span style="color: var(--green);">●</span>
+                <span>Amit Sharma (Logistics)</span>
+                <code style="color: var(--muted);">VST-9KLF-JC2S-SXCF</code>
+              </a>
+              <a href="/visitors/lookup?visitorCode=VST-AKDV-7VXF-AZP4" class="quick-test-badge">
+                <span style="color: var(--green);">●</span>
+                <span>Dr. Sunita Patel (Vet)</span>
+                <code style="color: var(--muted);">VST-AKDV-7VXF-AZP4</code>
+              </a>
+              <a href="/visitors/lookup?visitorCode=VST-P9UW-5AGV-AD3E" class="quick-test-badge">
+                <span style="color: var(--green);">●</span>
+                <span>Rajesh Verma (Sanitation)</span>
+                <code style="color: var(--muted);">VST-P9UW-5AGV-AD3E</code>
+              </a>
+            </div>
+          </section>
+        </div>
       </main>
     </div>
 
-    <!-- QR DECODER -->
-    <!-- QR DECODER -->
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+    <!-- LOCAL jsQR SCRIPT WITH CDN FALLBACK -->
+    <script src="/js/jsqr.min.js"></script>
+    <script>
+      if (!window.jsQR) {
+        console.warn("Local jsQR not found, loading from CDN...");
+        document.write('<script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"><\/script>');
+      }
+    </script>
 
+    <!-- SCANNER LOGIC -->
     <script>
       const video = document.getElementById("camera");
       const canvas = document.getElementById("qr-canvas");
-      const context = canvas.getContext("2d", {
-        willReadFrequently: true,
-      });
+      const context = canvas.getContext("2d", { willReadFrequently: true });
 
-      const status = document.getElementById("scan-status");
+      const statusBox = document.getElementById("scan-status");
+      const statusText = document.getElementById("scan-status-text");
+      const cameraBadge = document.getElementById("camera-badge");
       const startButton = document.getElementById("start-camera");
       const stopButton = document.getElementById("stop-camera");
+      const flipButton = document.getElementById("flip-camera");
 
       let stream = null;
       let scanning = false;
       let redirecting = false;
+      let currentFacingMode = "environment"; // default to rear camera
+
+      // Tab switcher
+      function switchScanMode(mode) {
+        document.getElementById("tab-camera").classList.toggle("active", mode === "camera");
+        document.getElementById("tab-upload").classList.toggle("active", mode === "upload");
+        document.getElementById("tab-manual").classList.toggle("active", mode === "manual");
+
+        document.getElementById("panel-camera").style.display = mode === "camera" ? "block" : "none";
+        document.getElementById("panel-upload").style.display = mode === "upload" ? "block" : "none";
+        document.getElementById("panel-manual").style.display = mode === "manual" ? "block" : "none";
+
+        if (mode === "camera" && !scanning) {
+          startCamera();
+        } else if (mode !== "camera" && scanning) {
+          stopCamera();
+        }
+      }
+
+      // Play soft confirmation beep on success
+      function playScanSuccessBeep() {
+        try {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContext) return;
+          const ctx = new AudioContext();
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(880, ctx.currentTime); // 880Hz (A5)
+          gain.gain.setValueAtTime(0.2, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16);
+
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.16);
+        } catch (e) {
+          // Audio autoplay policy or not supported
+        }
+      }
 
       async function startCamera() {
-        if (scanning) {
-          return;
-        }
+        if (scanning) return;
 
         if (!window.jsQR) {
-          status.textContent =
-            "QR scanner library could not be loaded. Please refresh the page.";
-          console.error("jsQR library is not available.");
+          statusBox.className = "scan-status-banner error";
+          statusText.textContent = "QR scanner library could not be loaded. Please refresh.";
+          cameraBadge.textContent = "Lib Missing";
+          cameraBadge.className = "badge high";
           return;
         }
 
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          status.textContent =
-            "Camera is not supported by this browser. Please use manual lookup.";
+          statusBox.className = "scan-status-banner warning";
+          statusText.textContent = "Camera not supported on this browser context. Please use file upload or manual ID.";
+          cameraBadge.textContent = "Unsupported";
+          cameraBadge.className = "badge medium";
           return;
         }
 
         try {
-          status.textContent = "Requesting camera access...";
+          statusBox.className = "scan-status-banner";
+          statusText.textContent = "Requesting camera permissions...";
+          cameraBadge.textContent = "Requesting";
+          cameraBadge.className = "badge info";
 
           stream = await navigator.mediaDevices.getUserMedia({
             video: {
-              facingMode: {
-                ideal: "environment",
-              },
-              width: {
-                ideal: 1280,
-              },
-              height: {
-                ideal: 720,
-              },
+              facingMode: { ideal: currentFacingMode },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
             },
-            audio: false,
+            audio: false
           });
 
           video.srcObject = stream;
-
           await video.play();
 
           scanning = true;
           redirecting = false;
 
-          status.textContent =
-            "Camera active. Place the QR code inside the box.";
+          statusBox.className = "scan-status-banner";
+          statusText.textContent = "Camera active. Place the QR code inside the viewfinder.";
+          cameraBadge.textContent = "Active";
+          cameraBadge.className = "badge verified";
 
           requestAnimationFrame(scanFrame);
         } catch (error) {
-          console.error("Camera error:", error);
+          console.error("Camera start error:", error);
+          cameraBadge.textContent = "Inactive";
+          cameraBadge.className = "badge high";
 
           if (error.name === "NotAllowedError") {
-            status.textContent =
-              "Camera permission was denied. Allow camera access and try again.";
+            statusBox.className = "scan-status-banner error";
+            statusText.textContent = "Camera permission was denied. Allow camera access in browser settings and retry.";
           } else if (error.name === "NotFoundError") {
-            status.textContent = "No camera was found on this device.";
+            statusBox.className = "scan-status-banner warning";
+            statusText.textContent = "No camera found on this device. Please use QR file upload or manual entry.";
           } else if (error.name === "NotReadableError") {
-            status.textContent =
-              "Camera is already being used by another application.";
+            statusBox.className = "scan-status-banner error";
+            statusText.textContent = "Camera is already in use by another application.";
           } else {
-            status.textContent =
-              "Unable to start camera. Please use manual lookup.";
+            statusBox.className = "scan-status-banner warning";
+            statusText.textContent = "Unable to start camera. Please use QR file upload or manual entry.";
           }
         }
       }
 
       function stopCamera() {
         scanning = false;
-
         if (stream) {
-          stream.getTracks().forEach((track) => {
-            track.stop();
-          });
-
+          stream.getTracks().forEach((track) => track.stop());
           stream = null;
         }
-
         video.srcObject = null;
+        statusBox.className = "scan-status-banner";
+        statusText.textContent = "Camera paused.";
+        cameraBadge.textContent = "Paused";
+        cameraBadge.className = "badge medium";
+      }
 
-        status.textContent = "Camera stopped.";
+      function toggleFacingMode() {
+        currentFacingMode = currentFacingMode === "environment" ? "user" : "environment";
+        stopCamera();
+        startCamera();
       }
 
       function scanFrame() {
-        if (!scanning || redirecting) {
-          return;
-        }
+        if (!scanning || redirecting) return;
 
         if (
           video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
@@ -296,126 +637,129 @@
           const width = video.videoWidth;
           const height = video.videoHeight;
 
-          /*
-           * Scan the central region first.
-           * This corresponds roughly to the visible scan box.
-           */
-          const size = Math.min(width, height) * 0.65;
-
+          // 1. First scan central region for rapid target capture
+          const size = Math.min(width, height) * 0.70;
           const sx = (width - size) / 2;
           const sy = (height - size) / 2;
 
           canvas.width = Math.floor(size);
           canvas.height = Math.floor(size);
 
-          context.drawImage(
-            video,
-            sx,
-            sy,
-            size,
-            size,
-            0,
-            0,
-            canvas.width,
-            canvas.height,
-          );
+          context.drawImage(video, sx, sy, size, size, 0, 0, canvas.width, canvas.height);
 
-          let imageData = context.getImageData(
-            0,
-            0,
-            canvas.width,
-            canvas.height,
-          );
-
+          let imageData = context.getImageData(0, 0, canvas.width, canvas.height);
           let result = jsQR(imageData.data, imageData.width, imageData.height, {
-            inversionAttempts: "attemptBoth",
+            inversionAttempts: "attemptBoth"
           });
 
-          /*
-           * If central scan failed, scan the complete camera frame.
-           */
+          // 2. If central scan failed, scan wide full frame
           if (!result) {
             canvas.width = width;
             canvas.height = height;
-
             context.drawImage(video, 0, 0, width, height, 0, 0, width, height);
-
             imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-
             result = jsQR(imageData.data, imageData.width, imageData.height, {
-              inversionAttempts: "attemptBoth",
+              inversionAttempts: "attemptBoth"
             });
           }
 
-          if (result) {
-            handleQrResult(result.data);
-            return;
+          if (result && result.data) {
+            const isMatch = handleQrResult(result.data);
+            if (isMatch) {
+              return; // Stop scanning, redirecting to visitor profile
+            }
           }
         }
 
+        // Keep loop running seamlessly without crashing
         requestAnimationFrame(scanFrame);
       }
 
+      // Processes decoded QR string
       function handleQrResult(value) {
-        if (redirecting) {
-          return;
+        if (redirecting) return true;
+
+        const rawScanned = (value || "").trim();
+        console.log("Decoded QR data:", rawScanned);
+
+        // Robust match: extracts VST-XXXX-XXXX-XXXX from raw text or full URLs
+        const match = rawScanned.match(/VST-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+/i);
+
+        if (!match) {
+          // Notice: do NOT crash or halt loop! Display transient warning and return false to continue scanning
+          statusBox.className = "scan-status-banner warning";
+          statusText.textContent = "QR detected, but not a LiveShield Visitor ID. Keep scanning...";
+          return false;
         }
 
-        const scannedValue = value.trim();
-
-        console.log("QR detected:", scannedValue);
-
-        /*
-         * Accept exactly the LiveShield visitor ID format:
-         *
-         * VST-XXXX-XXXX-XXXX
-         */
-        const visitorCodePattern = /^VST-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/i;
-
-        if (!visitorCodePattern.test(scannedValue)) {
-          status.textContent =
-            "QR detected, but it is not a valid LiveShield visitor ID.";
-
-          return;
-        }
-
+        const visitorCode = match[0].toUpperCase();
         redirecting = true;
         scanning = false;
 
-        status.textContent = "Visitor identified. Loading profile...";
+        playScanSuccessBeep();
+
+        statusBox.className = "scan-status-banner success";
+        statusText.textContent = "✓ Identified: " + visitorCode + ". Loading profile...";
+        cameraBadge.textContent = "Identified ✓";
+        cameraBadge.className = "badge verified";
 
         if (stream) {
-          stream.getTracks().forEach((track) => {
-            track.stop();
-          });
-
+          stream.getTracks().forEach((track) => track.stop());
           stream = null;
         }
 
-        /*
-         * IMPORTANT:
-         * Use the exact value returned by the QR scanner.
-         */
-        const encodedVisitorCode = encodeURIComponent(
-          scannedValue.toUpperCase(),
-        );
-
-        const lookupUrl = "/visitors/lookup?visitorCode=" + encodedVisitorCode;
-
-        console.log("Redirecting to:", lookupUrl);
-
+        const lookupUrl = "/visitors/lookup?visitorCode=" + encodeURIComponent(visitorCode);
+        console.log("Redirecting to profile:", lookupUrl);
         window.location.assign(lookupUrl);
+        return true;
+      }
+
+      // Handle Image File Upload (Fallback for desktops/laptops or photo gallery)
+      function handleImageUpload(e) {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+
+        const uploadBox = document.getElementById("upload-status");
+        const uploadText = document.getElementById("upload-status-text");
+        uploadBox.style.display = "flex";
+        uploadBox.className = "scan-status-banner";
+        uploadText.textContent = "Reading image file...";
+
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          const img = new Image();
+          img.onload = function() {
+            canvas.width = img.width;
+            canvas.height = img.height;
+            context.drawImage(img, 0, 0);
+
+            const imgData = context.getImageData(0, 0, img.width, img.height);
+            const result = jsQR(imgData.data, imgData.width, imgData.height, {
+              inversionAttempts: "attemptBoth"
+            });
+
+            if (result && result.data) {
+              const matched = handleQrResult(result.data);
+              if (!matched) {
+                uploadBox.className = "scan-status-banner error";
+                uploadText.textContent = "QR found, but it is not a valid LiveShield visitor ID format.";
+              }
+            } else {
+              uploadBox.className = "scan-status-banner error";
+              uploadText.textContent = "No readable QR code found in this image. Please choose a clearer image.";
+            }
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
       }
 
       startButton.addEventListener("click", startCamera);
-
       stopButton.addEventListener("click", stopCamera);
-
+      flipButton.addEventListener("click", toggleFacingMode);
       window.addEventListener("beforeunload", stopCamera);
 
-      /*
-       * Automatically start the camera when the page loads.
-       */
+      // Auto start on page load
       window.addEventListener("load", () => {
         startCamera();
       });

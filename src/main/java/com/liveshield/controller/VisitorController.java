@@ -154,8 +154,15 @@ public class VisitorController {
             Model model) {
 
         try {
+            String cleanCode = visitorCode != null ? visitorCode.trim() : "";
+            java.util.regex.Matcher m = java.util.regex.Pattern.compile("VST-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+", java.util.regex.Pattern.CASE_INSENSITIVE).matcher(cleanCode);
+            if (m.find()) {
+                cleanCode = m.group().toUpperCase();
+            } else {
+                cleanCode = cleanCode.toUpperCase();
+            }
 
-            VisitorService.VisitorProfile profile = visitorService.loadProfile(visitorCode);
+            VisitorService.VisitorProfile profile = visitorService.loadProfile(cleanCode);
 
             Visitor visitor = profile.visitor();
 
@@ -389,8 +396,8 @@ public class VisitorController {
             Model model) {
 
         try {
-
-            VisitorService.VisitorProfile profile = visitorService.loadProfile(visitorCode);
+            String cleanCode = visitorCode != null ? visitorCode.trim().toUpperCase() : "";
+            VisitorService.VisitorProfile profile = visitorService.loadProfile(cleanCode);
 
             Visitor visitor = profile.visitor();
 
