@@ -12,7 +12,27 @@ import java.util.List;
 public class LiveShieldApplication {
     public static void main(String[] args) {
         loadDotEnv();
+        normalizeDatabaseUrl();
         SpringApplication.run(LiveShieldApplication.class, args);
+    }
+
+    private static void normalizeDatabaseUrl() {
+        String dbUrl = System.getenv("DATABASE_URL");
+        if (dbUrl == null || dbUrl.isBlank()) {
+            dbUrl = System.getProperty("DATABASE_URL");
+        }
+        if (dbUrl != null && !dbUrl.isBlank()) {
+            if (dbUrl.startsWith("postgres://")) {
+                dbUrl = "jdbc:postgresql://" + dbUrl.substring("postgres://".length());
+                System.setProperty("spring.datasource.url", dbUrl);
+            } else if (dbUrl.startsWith("postgresql://")) {
+                dbUrl = "jdbc:" + dbUrl;
+                System.setProperty("spring.datasource.url", dbUrl);
+            } else if (dbUrl.startsWith("jdbc:")) {
+                System.setProperty("spring.datasource.url", dbUrl);
+            }
+            System.out.println(">>> [DATABASE] Configured DataSource URL from environment.");
+        }
     }
 
     private static void loadDotEnv() {
