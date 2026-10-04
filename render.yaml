@@ -1,0 +1,44 @@
+services:
+  - type: web
+    name: liveshield-app
+    runtime: docker
+    dockerfilePath: Dockerfile
+    plan: free
+    region: oregon
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: PORT
+        value: 8081
+      - key: DATABASE_URL
+        fromDatabase:
+          name: liveshield-db
+          property: connectionString
+      - key: DATABASE_USERNAME
+        fromDatabase:
+          name: liveshield-db
+          property: user
+      - key: DATABASE_PASSWORD
+        fromDatabase:
+          name: liveshield-db
+          property: password
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_WHATSAPP_FROM
+        sync: false
+      - key: LIVESHIELD_ADMIN_WHATSAPP_NUMBERS
+        sync: false
+
+databases:
+  - name: liveshield-db
+    databaseName: liveshield
+    user: liveshield
+    plan: free
+    region: oregon
