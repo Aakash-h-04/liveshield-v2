@@ -1,5 +1,8 @@
 # LiveShield — Enterprise BioSecurity Operations Command
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Aakash-h-04/liveshield-v2)
+[![LiveShield CI / CD](https://github.com/Aakash-h-04/liveshield-v2/actions/workflows/ci.yml/badge.svg)](https://github.com/Aakash-h-04/liveshield-v2/actions/workflows/ci.yml)
+
 LiveShield is a modern, enterprise-grade biosecurity operations and surveillance platform for agricultural facilities, livestock management, and perimeter security. Built with **Spring Boot 3**, **Thymeleaf**, **PostgreSQL**, **Chart.js**, and automated **Email + WhatsApp Outbound Dispatch pipelines**.
 
 ---

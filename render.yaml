@@ -1,11 +1,11 @@
 services:
   - type: web
     name: liveshield-app
-    runtime: docker
+    env: docker
     dockerfilePath: Dockerfile
     plan: free
     region: oregon
-    healthCheckPath: /actuator/health
+    healthCheckPath: /
     envVars:
       - key: PORT
         value: 8081
