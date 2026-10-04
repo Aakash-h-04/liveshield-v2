@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>LiveShield · Page Not Found</title>
+
+    <link rel="stylesheet" href="/css/app.css" />
+    <script src="/js/theme.js"></script>
+  </head>
+
+  <body>
+    <div class="form-page">
+      <div class="form-card">
+        <span class="eyebrow">LIVE SHIELD SYSTEM</span>
+
+        <h1 th:text="${errorTitle ?: (status == 404 ? 'Resource Not Found' : 'Notice')}">
+          System Notice
+        </h1>
+
+        <p class="muted" th:text="${error ?: (message ?: (errorMessage ?: 'The requested resource could not be found or processed.'))}">
+          The requested resource could not be found or processed.
+        </p>
+
+        <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">
+          <a href="/visitors" class="button primary">View Visitors</a>
+          <a href="/visitors/smart-gate" class="button">Smart Gate</a>
+          <a href="/" class="button">← Dashboard</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

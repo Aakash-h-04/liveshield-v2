@@ -1,0 +1,1442 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>LiveShield · Smart Gate Terminal</title>
+
+    <link rel="stylesheet" href="/css/app.css" />
+    <script src="/js/theme.js"></script>
+
+    <!-- jsQR Library for High Performance Browser QR Decoding -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+    <style>
+      .gate-terminal-body {
+        background: var(--bg);
+        min-height: 100vh;
+      }
+      .hud-title {
+        font-size: 19px;
+        font-weight: 700;
+        margin: 0 0 4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .hud-subtitle {
+        font-size: 13px;
+        color: var(--muted);
+        margin: 0;
+      }
+      .farm-select-pill {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--bg);
+        border: 1px solid var(--line);
+        padding: 6px 12px;
+        border-radius: 8px;
+      }
+      .farm-select-pill select {
+        background: transparent;
+        border: none;
+        color: var(--ink);
+        font-size: 13px;
+        font-weight: 600;
+        outline: none;
+        cursor: pointer;
+      }
+      .step-stage {
+        display: none;
+      }
+      .step-stage.active {
+        display: block;
+      }
+      .terminal-status-banner {
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+        font-size: 13px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .terminal-status-banner.info {
+        background: var(--green-soft);
+        color: var(--green-dark);
+        border: 1px solid var(--green);
+      }
+      .terminal-status-banner.danger {
+        background: var(--red-bg);
+        color: var(--red);
+        border: 1px solid var(--red);
+      }
+      .terminal-status-banner.warn {
+        background: var(--amber-bg);
+        color: var(--amber);
+        border: 1px solid var(--amber);
+      }
+      .badge-decision {
+        font-size: 14px;
+        padding: 8px 16px;
+        border-radius: 8px;
+        display: inline-block;
+        font-weight: 800;
+        letter-spacing: 0.5px;
+      }
+      .badge-decision.allowed {
+        background: #285c43;
+        color: #fff;
+      }
+      .badge-decision.denied {
+        background: #a33b35;
+        color: #fff;
+      }
+      .badge-decision.review {
+        background: #9a6816;
+        color: #fff;
+      }
+      .spinner {
+        display: inline-block;
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+    </style>
+  </head>
+
+  <body class="gate-terminal-body">
+    <div class="app-shell">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">LS</div>
+          <div>
+            <strong>LiveShield</strong>
+            <small>Biosecurity Portal</small>
+          </div>
+        </div>
+
+        <nav>
+          <a href="/">Dashboard</a>
+          <a href="/visitors" class="active">Visitors</a>
+          <a href="/guides">Guides</a>
+          <a href="/alerts">Alerts</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <a href="/visitors" class="button secondary" style="width: 100%; text-align: center; margin-bottom: 10px;">
+            ← Visitors List
+          </a>
+        </div>
+      </aside>
+
+      <!-- MAIN GATE TERMINAL -->
+      <main class="main" style="max-width: 1200px;">
+        <!-- TERMINAL HUD HEADER -->
+        <div class="gate-hud-header">
+          <div>
+            <h1 class="hud-title">
+              <span>Smart Gate Terminal</span>
+              <span class="gate-status-pill">LIVE OPERATIONAL</span>
+            </h1>
+            <p class="hud-subtitle">
+              Automated visitor biometric match, QR identification &amp; 7-day farm sickness screening.
+            </p>
+          </div>
+
+          <div style="display: flex; gap: 12px; align-items: center;">
+            <div class="farm-select-pill">
+              <span style="font-size: 11px; font-weight: 700; color: var(--muted);">GATE AT:</span>
+              <select id="selected-farm-id">
+                <option th:each="farm : ${farms}" th:value="${farm.id}" th:text="${farm.name}" th:selected="${farm.id == selectedFarmId}">
+                  Farm
+                </option>
+              </select>
+            </div>
+            <a href="/visitors" class="button secondary">Exit Terminal</a>
+          </div>
+        </div>
+
+        <!-- GATE OPERATION MODE TOGGLE -->
+        <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+          <button id="gate-mode-btn-checkin" type="button" class="btn btn-primary" onclick="switchGateMode('CHECKIN')" style="padding: 10px 24px; font-weight: 700; border-radius: 8px; cursor: pointer;">
+            🟢 Gate Entry (Check-In)
+          </button>
+          <button id="gate-mode-btn-checkout" type="button" class="btn btn-secondary" onclick="switchGateMode('CHECKOUT')" style="padding: 10px 24px; font-weight: 700; border-radius: 8px; cursor: pointer;">
+            🔵 Gate Exit (Check-Out)
+          </button>
+        </div>
+
+        <!-- 4-STEP ACCESS CONTROL NAVIGATION -->
+        <div class="gate-step-nav">
+          <div id="step-tab-1" class="gate-step-tab active">
+            <div class="step-num">1</div>
+            <div>
+              <strong style="font-size: 13px; display: block;">Face Photo</strong>
+              <small class="muted">Live capture</small>
+            </div>
+          </div>
+
+          <div id="step-tab-2" class="gate-step-tab">
+            <div class="step-num">2</div>
+            <div>
+              <strong style="font-size: 13px; display: block;">Scan QR</strong>
+              <small class="muted">LiveShield ID</small>
+            </div>
+          </div>
+
+          <div id="step-tab-3" class="gate-step-tab">
+            <div class="step-num">3</div>
+            <div>
+              <strong id="step-tab-3-title" style="font-size: 13px; display: block;">Biosecurity Check</strong>
+              <small id="step-tab-3-sub" class="muted">Face + 7-Day health</small>
+            </div>
+          </div>
+
+          <div id="step-tab-4" class="gate-step-tab">
+            <div class="step-num">4</div>
+            <div>
+              <strong id="step-tab-4-title" style="font-size: 13px; display: block;">Gate Clearance</strong>
+              <small id="step-tab-4-sub" class="muted">Pass &amp; alerts</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- TERMINAL INTERACTION CONTAINER -->
+        <div class="smart-gate-container">
+
+          <!-- ========================================================
+               STAGE 1: FACE PHOTO CAPTURE
+               ======================================================== -->
+          <div id="stage-1" class="step-stage active">
+            <div class="gate-terminal-grid">
+              <div class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h3>Step 1: Visitor Live Camera</h3>
+                    <p>Please have the visitor stand in front of the gate camera.</p>
+                  </div>
+                  <span id="camera-status-pill" class="badge">Camera Ready</span>
+                </div>
+
+                <div class="gate-camera-viewport">
+                  <video id="gate-video" autoplay muted playsinline></video>
+                  <img id="gate-photo-preview" style="display: none;" alt="Captured Gate Frame" />
+                  <div id="gate-face-guide" class="face-guide-oval"></div>
+                  <div id="camera-loading-overlay" style="position: absolute; inset: 0; background: rgba(0,0,0,0.7); display: grid; place-items: center; color: #fff; font-size: 13px;">
+                    <div>Starting live admission camera...</div>
+                  </div>
+                </div>
+
+                <canvas id="gate-canvas" style="display: none;"></canvas>
+
+                <div style="display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap;">
+                  <button id="btn-snap-gate" class="button primary" style="flex: 1; padding: 12px;" type="button">
+                    📸 Capture Photo
+                  </button>
+                  <button id="btn-retake-gate" class="button secondary" style="display: none;" type="button">
+                    ↺ Retake Photo
+                  </button>
+                  <button id="btn-proceed-to-qr" class="button primary" style="background: var(--green-dark); display: none; flex: 1.5; padding: 12px;" type="button">
+                    Continue to QR Scan →
+                  </button>
+                </div>
+              </div>
+
+              <!-- Operator Instructions Panel -->
+              <div class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h3>Smart Gate Protocol</h3>
+                    <p>Access control biosecurity directives</p>
+                  </div>
+                </div>
+
+                <ul class="verification-checklist">
+                  <li>
+                    <div class="check-icon pass">1</div>
+                    <div>
+                      <strong>Position Visitor</strong>
+                      <p class="muted">Instruct visitor to align their face within the positioning guide.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <div class="check-icon pass">2</div>
+                    <div>
+                      <strong>Photo Capture</strong>
+                      <p class="muted">A still frame is captured to match against their registered identity.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <div class="check-icon pass">3</div>
+                    <div>
+                      <strong>QR Identity Lookup</strong>
+                      <p class="muted">Visitor presents their registered LiveShield QR pass code.</p>
+                    </div>
+                  </li>
+                  <li>
+                    <div class="check-icon pass">4</div>
+                    <div>
+                      <strong>7-Day Farm Sickness Check</strong>
+                      <p class="muted">System validates that no farm visited in past 7 days reports sickness.</p>
+                    </div>
+                  </li>
+                </ul>
+
+                <div style="margin-top: 24px; padding: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;">
+                  <strong style="font-size: 12px; color: var(--muted); display: block; margin-bottom: 4px;">PRIVACY NOTICE</strong>
+                  <p class="muted" style="font-size: 12px; line-height: 1.4;">
+                    Images captured are used exclusively for verification and entry authorization.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========================================================
+               STAGE 2: QR SCANNER
+               ======================================================== -->
+          <div id="stage-2" class="step-stage">
+            <div class="gate-terminal-grid">
+              <div class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h3>Step 2: Scan Visitor QR</h3>
+                    <p>Present the visitor's permanent LiveShield QR code to the scanner.</p>
+                  </div>
+                  <span id="qr-scan-badge" class="badge verified">Scanning Live</span>
+                </div>
+
+                <div class="gate-camera-viewport">
+                  <video id="qr-video" autoplay muted playsinline></video>
+                  <div class="corner-brackets"></div>
+                  <div class="scan-pulse-line"></div>
+                </div>
+
+                <div id="qr-scan-status-text" class="terminal-status-banner info" style="margin-top: 14px;">
+                  Point visitor QR code within the highlighted corner markers.
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 12px;">
+                  <button id="btn-back-to-photo" class="button secondary" type="button">
+                    ← Back to Photo Capture
+                  </button>
+                </div>
+              </div>
+
+              <!-- Manual Code Fallback Panel -->
+              <div class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h3>Manual Code Lookup</h3>
+                    <p>If QR code is damaged or unreadable on screen</p>
+                  </div>
+                </div>
+
+                <div style="margin-top: 10px;">
+                  <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 6px;">
+                    Visitor Code
+                  </label>
+                  <input
+                    type="text"
+                    id="manual-visitor-code"
+                    placeholder="VST-XXXX-XXXX-XXXX"
+                    style="width: 100%; padding: 10px; font-family: monospace; font-size: 14px; border: 1px solid var(--line); border-radius: 6px; box-sizing: border-box;"
+                  />
+                  <button id="btn-manual-lookup" class="button primary" style="width: 100%; margin-top: 12px;" type="button">
+                    Verify Visitor Code
+                  </button>
+                </div>
+
+                <div style="margin-top: 28px; padding: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;">
+                  <strong>Expected Format:</strong>
+                  <p class="muted" style="font-size: 12px; margin-top: 4px;">
+                    LiveShield IDs follow the standard <code>VST-XXXX-XXXX-XXXX</code> alphanumeric sequence.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========================================================
+               STAGE 3: VERIFICATION, FACE MATCH & 7-DAY SICKNESS CHECK
+               ======================================================== -->
+          <div id="stage-3" class="step-stage">
+            <div class="gate-terminal-grid">
+              <!-- Left Column: Face Comparison & Visitor Details -->
+              <div class="panel">
+                <div class="panel-head">
+                  <div>
+                    <h3 id="verif-visitor-name">Visitor Verification</h3>
+                    <p id="verif-visitor-meta" class="muted">VST-XXXX-XXXX-XXXX</p>
+                  </div>
+                  <span id="verif-decision-badge" class="badge-decision allowed">EVALUATING...</span>
+                </div>
+
+                <!-- Side-by-side Face Comparison -->
+                <h4 style="font-size: 13px; color: var(--muted); margin: 10px 0 6px;">BIOMETRIC FACIAL COMPARISON</h4>
+                <div class="face-compare-container">
+                  <div class="face-compare-card">
+                    <img id="img-reg-photo" src="" alt="Registration Photo" />
+                    <strong style="font-size: 12px; display: block; margin-top: 6px;">Registered Reference</strong>
+                    <small class="muted" id="lbl-reg-date">From Registration</small>
+                  </div>
+                  <div class="face-compare-card">
+                    <img id="img-gate-photo" src="" alt="Gate Captured Photo" />
+                    <strong style="font-size: 12px; display: block; margin-top: 6px;">Smart Gate Live Frame</strong>
+                    <small class="muted">Captured Today</small>
+                  </div>
+                </div>
+
+                <!-- Match Meter -->
+                <div id="face-match-banner" class="match-meter matched">
+                  <span id="face-match-text">Face Match Verified (94% Similarity)</span>
+                  <span id="face-match-score">✓ MATCH</span>
+                </div>
+
+                <!-- 7-Day Farm Sickness Exposure Assessment -->
+                <h4 style="font-size: 13px; color: var(--muted); margin: 20px 0 6px;">PAST 7 DAYS FARM EXPOSURE</h4>
+                <div id="past-week-banner" class="terminal-status-banner info">
+                  <div style="font-size: 18px;">🛡️</div>
+                  <div style="flex: 1;">
+                    <strong id="past-week-title">All Visited Farms Healthy</strong>
+                    <p id="past-week-desc" class="muted" style="margin-top: 2px; font-size: 12px;">
+                      No farms visited in past 7 days report active sickness or disease outbreaks.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Visited Farms Breakdown if any -->
+                <div id="visited-farms-table-container" style="display: none; margin-top: 10px;">
+                  <table style="font-size: 11px;">
+                    <thead>
+                      <tr>
+                        <th>Farm Visited</th>
+                        <th>Date</th>
+                        <th>Health Status</th>
+                      </tr>
+                    </thead>
+                    <tbody id="visited-farms-tbody"></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Right Column: Biosecurity Evaluation & Admission/Exit Action -->
+              <div class="panel">
+                <!-- ADMISSION CLEARANCE PANEL (CHECK-IN MODE) -->
+                <div id="admission-panel-container">
+                  <div class="panel-head">
+                    <div>
+                      <h3>Gate Admission Clearance</h3>
+                      <p>Authoritative backend clearance check</p>
+                    </div>
+                  </div>
+
+                  <ul class="verification-checklist">
+                    <li>
+                      <div id="check-icon-account" class="check-icon pass">✓</div>
+                      <div>
+                        <strong>Account Status</strong>
+                        <span id="check-lbl-account" class="muted">ACTIVE</span>
+                      </div>
+                    </li>
+                    <li>
+                      <div id="check-icon-licence" class="check-icon pass">✓</div>
+                      <div>
+                        <strong>Professional Licence</strong>
+                        <span id="check-lbl-licence" class="muted">VERIFIED</span>
+                      </div>
+                    </li>
+                    <li>
+                      <div id="check-icon-face" class="check-icon pass">✓</div>
+                      <div>
+                        <strong>Facial Identity Match</strong>
+                        <span id="check-lbl-face" class="muted">CONFIRMED</span>
+                      </div>
+                    </li>
+                    <li>
+                      <div id="check-icon-pastweek" class="check-icon pass">✓</div>
+                      <div>
+                        <strong>7-Day Farm Health Screening</strong>
+                        <span id="check-lbl-pastweek" class="muted">ALL HEALTHY</span>
+                      </div>
+                    </li>
+                    <li>
+                      <div id="check-icon-activevisit" class="check-icon pass">✓</div>
+                      <div>
+                        <strong>Visit Collision Check</strong>
+                        <span id="check-lbl-activevisit" class="muted">No duplicate active visit</span>
+                      </div>
+                    </li>
+                  </ul>
+
+                  <!-- Admission Form (if allowed) -->
+                  <div id="admission-form-box" style="margin-top: 20px;">
+                    <div style="margin-bottom: 12px;">
+                      <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Purpose of Visit</label>
+                      <select id="admit-purpose" style="width: 100%; padding: 9px; border: 1px solid var(--line); border-radius: 6px;">
+                        <option value="DELIVERY">Delivery</option>
+                        <option value="MAINTENANCE">Maintenance</option>
+                        <option value="VETERINARY">Veterinary Service</option>
+                        <option value="INSPECTION">Inspection</option>
+                        <option value="MEETING">Meeting</option>
+                        <option value="OTHER">Other</option>
+                      </select>
+                    </div>
+
+                    <div style="margin-bottom: 18px;">
+                      <label style="font-size: 12px; font-weight: 600; display: block; margin-bottom: 4px;">Vehicle Number (Optional)</label>
+                      <input type="text" id="admit-vehicle" placeholder="e.g. KA01AB1234" style="width: 100%; padding: 9px; border: 1px solid var(--line); border-radius: 6px; box-sizing: border-box;" />
+                    </div>
+
+                    <button id="btn-admit-visitor" class="button primary" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 700; background: var(--green);" type="button">
+                      ⚡ ADMIT VISITOR TO FARM
+                    </button>
+                  </div>
+                </div>
+
+                <!-- CHECKOUT CLEARANCE PANEL (CHECK-OUT MODE) -->
+                <div id="checkout-panel-container" style="display: none;">
+                  <div class="panel-head">
+                    <div>
+                      <h3>Gate Exit Clearance</h3>
+                      <p>Authoritative biometric check &amp; checkout verification</p>
+                    </div>
+                  </div>
+
+                  <!-- Active Visit Summary Box -->
+                  <div style="padding: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; margin-bottom: 16px;">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                      <span class="muted" style="font-size: 12px;">ACTIVE FARM:</span>
+                      <strong id="co-farm-name" style="font-size: 13px;">—</strong>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                      <span class="muted" style="font-size: 12px;">PASS CODE:</span>
+                      <code id="co-pass-code" style="font-size: 12px; font-weight: 700; color: #2563eb;">—</code>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                      <span class="muted" style="font-size: 12px;">CHECKED IN:</span>
+                      <span id="co-checkin-time" style="font-size: 12px; font-weight: 600;">—</span>
+                    </div>
+                    <div style="display: flex; justify-content: space-between; padding-top: 8px; border-top: 1px dashed var(--line);">
+                      <span class="muted" style="font-size: 12px;">TIME ON FARM:</span>
+                      <strong id="co-elapsed-time" style="font-size: 14px; color: #2563eb;">—</strong>
+                    </div>
+                  </div>
+
+                  <ul class="verification-checklist">
+                    <li>
+                      <div id="co-check-icon-face" class="check-icon pass">✓</div>
+                      <div>
+                        <strong>Biometric Facial Identity Match</strong>
+                        <span id="co-check-lbl-face" class="muted">CONFIRMED</span>
+                      </div>
+                    </li>
+                    <li>
+                      <div id="co-check-icon-session" class="check-icon pass">✓</div>
+                      <div>
+                        <strong>Active Check-In Session</strong>
+                        <span id="co-check-lbl-session" class="muted">FOUND</span>
+                      </div>
+                    </li>
+                  </ul>
+
+                  <!-- Checkout Action Box -->
+                  <div id="checkout-form-box" style="margin-top: 20px;">
+                    <button id="btn-checkout-visitor" class="button primary" style="width: 100%; padding: 14px; font-size: 15px; font-weight: 700; background: #2563eb;" type="button">
+                      🚪 AUTHORIZE GATE EXIT &amp; CHECK OUT
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Failure / Rejection Notice (if not allowed) -->
+                <div id="rejection-box" style="display: none; margin-top: 18px; padding: 14px; background: var(--red-bg); border: 1px solid var(--red); border-radius: 8px;">
+                  <strong style="color: var(--red);">ACTION NOT PERMITTED</strong>
+                  <ul id="rejection-reasons-list" style="margin: 8px 0 0; padding-left: 20px; color: var(--red); font-size: 13px;"></ul>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 14px;">
+                  <button id="btn-cancel-admission" class="button secondary" style="width: 100%;" type="button">
+                    ↺ Cancel / Reset Gate
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ========================================================
+               STAGE 4: ADMISSION SUCCESS OR CHECKOUT CLEARANCE
+               ======================================================== -->
+          <div id="stage-4" class="step-stage">
+            <div class="panel" style="max-width: 700px; margin: 0 auto;">
+              <!-- 4A: CHECK-IN SUCCESS CONTAINER -->
+              <div id="admission-success-container">
+                <div style="text-align: center; padding: 10px 0 20px;">
+                  <div style="font-size: 48px; margin-bottom: 8px;">✅</div>
+                  <h2 style="margin: 0 0 6px;">Visitor Admitted Successfully</h2>
+                  <p class="muted">Digital Farm E-Pass generated and synchronized.</p>
+                </div>
+
+                <!-- E-Pass Card -->
+                <div class="epass-card">
+                  <div class="epass-header">
+                    <div>
+                      <span style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #a7f3d0;">LIVESHIELD BIOSECURITY PASS</span>
+                      <h3 id="epass-farm-name" style="margin: 4px 0 0; color: #fff; font-size: 18px;">Farm Name</h3>
+                    </div>
+                    <span class="badge verified" style="background: #22c55e; color: #000; font-weight: 800;">ACTIVE</span>
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 14px;">
+                    <div>
+                      <span style="font-size: 11px; opacity: 0.8; display: block;">VISITOR PASS CODE</span>
+                      <div id="epass-code" class="epass-code">PASS-XXXX-XXXX-XXXX</div>
+                    </div>
+                    <div style="text-align: right;">
+                      <span style="font-size: 11px; opacity: 0.8; display: block;">ENTRY TIME</span>
+                      <strong id="epass-time" style="font-size: 13px;">Oct 04, 2026 10:00 AM</strong>
+                    </div>
+                  </div>
+
+                  <div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.2); display: flex; justify-content: space-between; font-size: 12px; opacity: 0.9;">
+                    <div>Visitor: <strong id="epass-visitor-name">—</strong></div>
+                    <div>Valid Until: <strong id="epass-valid-until">—</strong></div>
+                  </div>
+                </div>
+
+                <!-- Notifications confirmation -->
+                <div style="margin-top: 20px; padding: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;">
+                  <strong style="font-size: 12px; color: var(--muted); display: block; margin-bottom: 8px;">ADMINISTRATIVE NOTIFICATIONS</strong>
+                  <div style="display: flex; gap: 20px; font-size: 13px;">
+                    <div id="notif-email-status">📧 Gmail API: <strong style="color: var(--green);">Sent to Admins ✓</strong></div>
+                    <div id="notif-whatsapp-status">📱 Twilio WhatsApp: <strong style="color: var(--green);">Sent to Admins ✓</strong></div>
+                  </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 24px; justify-content: center; gap: 14px;">
+                  <button onclick="window.print()" class="button secondary" type="button">
+                    🖨️ Print E-Pass
+                  </button>
+                  <button id="btn-next-visitor" class="button primary" style="background: var(--green);" type="button">
+                    Admit Next Visitor →
+                  </button>
+                </div>
+              </div>
+
+              <!-- 4B: CHECK-OUT SUCCESS CONTAINER -->
+              <div id="checkout-success-container" style="display: none;">
+                <div style="text-align: center; padding: 10px 0 20px;">
+                  <div style="font-size: 48px; margin-bottom: 8px;">🚪</div>
+                  <h2 style="margin: 0 0 6px;">Visitor Checked Out Successfully</h2>
+                  <p class="muted">Gate exit clearance recorded and farm visit session closed.</p>
+                </div>
+
+                <!-- Exit Clearance Receipt Card -->
+                <div class="checkout-card" style="background: linear-gradient(135deg, #1e293b, #0f172a); color: #fff; border-radius: 14px; padding: 24px; border: 1px solid #334155; box-shadow: 0 8px 24px rgba(0,0,0,0.25); margin-top: 16px;">
+                  <div class="epass-header" style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.15); padding-bottom: 12px; margin-bottom: 16px;">
+                    <div>
+                      <span style="font-size: 11px; font-weight: 800; letter-spacing: 1px; color: #93c5fd;">LIVESHIELD GATE EXIT CLEARANCE</span>
+                      <h3 id="co-receipt-farm-name" style="margin: 4px 0 0; color: #fff; font-size: 18px;">Farm Name</h3>
+                    </div>
+                    <span class="badge" style="background: #2563eb; color: #fff; font-weight: 800; padding: 6px 12px; border-radius: 6px;">CHECKED OUT</span>
+                  </div>
+
+                  <div style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 14px;">
+                    <div>
+                      <span style="font-size: 11px; opacity: 0.8; display: block;">VISITOR PASS CODE</span>
+                      <div id="co-receipt-code" style="font-family: monospace; font-size: 24px; letter-spacing: 1.5px; font-weight: 700; color: #60a5fa;">PASS-XXXX-XXXX-XXXX</div>
+                    </div>
+                    <div style="text-align: right;">
+                      <span style="font-size: 11px; opacity: 0.8; display: block;">TOTAL STAY DURATION</span>
+                      <strong id="co-receipt-duration" style="font-size: 15px; color: #93c5fd;">—</strong>
+                    </div>
+                  </div>
+
+                  <div style="margin-top: 16px; padding-top: 12px; border-top: 1px dashed rgba(255,255,255,0.2); display: flex; justify-content: space-between; font-size: 12px; opacity: 0.9; flex-wrap: wrap; gap: 8px;">
+                    <div>Visitor: <strong id="co-receipt-visitor-name">—</strong></div>
+                    <div>Check-In: <span id="co-receipt-checkin-time">—</span></div>
+                    <div>Check-Out: <strong id="co-receipt-checkout-time">—</strong></div>
+                  </div>
+                </div>
+
+                <!-- Notifications confirmation -->
+                <div style="margin-top: 20px; padding: 14px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px;">
+                  <strong style="font-size: 12px; color: var(--muted); display: block; margin-bottom: 8px;">ADMINISTRATIVE NOTIFICATIONS</strong>
+                  <div style="display: flex; gap: 20px; font-size: 13px;">
+                    <div id="co-notif-email-status">📧 Gmail API: <strong style="color: var(--green);">Exit Log Sent to Admins ✓</strong></div>
+                    <div id="co-notif-whatsapp-status">📱 Twilio WhatsApp: <strong style="color: var(--green);">Exit Log Sent to Admins ✓</strong></div>
+                  </div>
+                </div>
+
+                <div class="form-actions" style="margin-top: 24px; justify-content: center; gap: 14px;">
+                  <button onclick="window.print()" class="button secondary" type="button">
+                    🖨️ Print Exit Receipt
+                  </button>
+                  <button id="btn-next-visitor-co" class="button primary" style="background: #2563eb;" type="button">
+                    Process Next Visitor →
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </main>
+    </div>
+
+    <!-- CLIENT CONTROLLER SCRIPT FOR SMART GATE -->
+    <script>
+      // Elements
+      const stage1 = document.getElementById("stage-1");
+      const stage2 = document.getElementById("stage-2");
+      const stage3 = document.getElementById("stage-3");
+      const stage4 = document.getElementById("stage-4");
+
+      const tab1 = document.getElementById("step-tab-1");
+      const tab2 = document.getElementById("step-tab-2");
+      const tab3 = document.getElementById("step-tab-3");
+      const tab4 = document.getElementById("step-tab-4");
+
+      // Stage 1 Elements
+      const gateVideo = document.getElementById("gate-video");
+      const gateCanvas = document.getElementById("gate-canvas");
+      const gatePreview = document.getElementById("gate-photo-preview");
+      const faceGuide = document.getElementById("gate-face-guide");
+      const cameraLoading = document.getElementById("camera-loading-overlay");
+      const cameraStatusPill = document.getElementById("camera-status-pill");
+
+      const btnSnapGate = document.getElementById("btn-snap-gate");
+      const btnRetakeGate = document.getElementById("btn-retake-gate");
+      const btnProceedToQr = document.getElementById("btn-proceed-to-qr");
+
+      // Stage 2 Elements
+      const qrVideo = document.getElementById("qr-video");
+      const qrStatusText = document.getElementById("qr-scan-status-text");
+      const btnBackToPhoto = document.getElementById("btn-back-to-photo");
+      const manualCodeInput = document.getElementById("manual-visitor-code");
+      const btnManualLookup = document.getElementById("btn-manual-lookup");
+
+      // Stage 3 Elements
+      const verifVisitorName = document.getElementById("verif-visitor-name");
+      const verifVisitorMeta = document.getElementById("verif-visitor-meta");
+      const verifDecisionBadge = document.getElementById("verif-decision-badge");
+      const imgRegPhoto = document.getElementById("img-reg-photo");
+      const imgGatePhoto = document.getElementById("img-gate-photo");
+      const faceMatchBanner = document.getElementById("face-match-banner");
+      const faceMatchText = document.getElementById("face-match-text");
+      const faceMatchScore = document.getElementById("face-match-score");
+
+      const pastWeekBanner = document.getElementById("past-week-banner");
+      const pastWeekTitle = document.getElementById("past-week-title");
+      const pastWeekDesc = document.getElementById("past-week-desc");
+      const visitedFarmsContainer = document.getElementById("visited-farms-table-container");
+      const visitedFarmsTbody = document.getElementById("visited-farms-tbody");
+
+      const checkIconAccount = document.getElementById("check-icon-account");
+      const checkLblAccount = document.getElementById("check-lbl-account");
+      const checkIconLicence = document.getElementById("check-icon-licence");
+      const checkLblLicence = document.getElementById("check-lbl-licence");
+      const checkIconFace = document.getElementById("check-icon-face");
+      const checkLblFace = document.getElementById("check-lbl-face");
+      const checkIconPastWeek = document.getElementById("check-icon-pastweek");
+      const checkLblPastWeek = document.getElementById("check-lbl-pastweek");
+      const checkIconActive = document.getElementById("check-icon-activevisit");
+      const checkLblActive = document.getElementById("check-lbl-activevisit");
+
+      const rejectionBox = document.getElementById("rejection-box");
+      const rejectionReasonsList = document.getElementById("rejection-reasons-list");
+      const admissionFormBox = document.getElementById("admission-form-box");
+      const btnAdmitVisitor = document.getElementById("btn-admit-visitor");
+      const btnCancelAdmission = document.getElementById("btn-cancel-admission");
+
+      // Stage 4 Elements
+      const epassFarmName = document.getElementById("epass-farm-name");
+      const epassCode = document.getElementById("epass-code");
+      const epassTime = document.getElementById("epass-time");
+      const epassVisitorName = document.getElementById("epass-visitor-name");
+      const epassValidUntil = document.getElementById("epass-valid-until");
+      const notifEmailStatus = document.getElementById("notif-email-status");
+      const notifWhatsappStatus = document.getElementById("notif-whatsapp-status");
+      const btnNextVisitor = document.getElementById("btn-next-visitor");
+
+      // Checkout Specific Elements
+      const admissionPanelContainer = document.getElementById("admission-panel-container");
+      const checkoutPanelContainer = document.getElementById("checkout-panel-container");
+      const coFarmName = document.getElementById("co-farm-name");
+      const coPassCode = document.getElementById("co-pass-code");
+      const coCheckinTime = document.getElementById("co-checkin-time");
+      const coElapsedTime = document.getElementById("co-elapsed-time");
+      const coCheckIconFace = document.getElementById("co-check-icon-face");
+      const coCheckLblFace = document.getElementById("co-check-lbl-face");
+      const coCheckIconSession = document.getElementById("co-check-icon-session");
+      const coCheckLblSession = document.getElementById("co-check-lbl-session");
+      const checkoutFormBox = document.getElementById("checkout-form-box");
+      const btnCheckoutVisitor = document.getElementById("btn-checkout-visitor");
+
+      const admissionSuccessContainer = document.getElementById("admission-success-container");
+      const checkoutSuccessContainer = document.getElementById("checkout-success-container");
+      const coReceiptFarmName = document.getElementById("co-receipt-farm-name");
+      const coReceiptCode = document.getElementById("co-receipt-code");
+      const coReceiptDuration = document.getElementById("co-receipt-duration");
+      const coReceiptVisitorName = document.getElementById("co-receipt-visitor-name");
+      const coReceiptCheckinTime = document.getElementById("co-receipt-checkin-time");
+      const coReceiptCheckoutTime = document.getElementById("co-receipt-checkout-time");
+      const coNotifEmailStatus = document.getElementById("co-notif-email-status");
+      const coNotifWhatsappStatus = document.getElementById("co-notif-whatsapp-status");
+      const btnNextVisitorCo = document.getElementById("btn-next-visitor-co");
+
+      // State
+      let currentGateMode = "CHECKIN"; // 'CHECKIN' or 'CHECKOUT'
+      let mediaStream = null;
+      let currentGatePhotoData = null;
+      let qrScanning = false;
+      let activeVisitorCode = null;
+      let lastVerificationData = null;
+
+      window.switchGateMode = function(mode) {
+        currentGateMode = mode;
+        const btnIn = document.getElementById("gate-mode-btn-checkin");
+        const btnOut = document.getElementById("gate-mode-btn-checkout");
+        const tab3Title = document.getElementById("step-tab-3-title");
+        const tab3Sub = document.getElementById("step-tab-3-sub");
+        const tab4Title = document.getElementById("step-tab-4-title");
+        const tab4Sub = document.getElementById("step-tab-4-sub");
+
+        if (mode === "CHECKOUT") {
+          btnIn.className = "button secondary";
+          btnIn.style.background = "transparent";
+          btnIn.style.color = "var(--ink)";
+          btnIn.style.border = "1px solid var(--line)";
+
+          btnOut.className = "button primary";
+          btnOut.style.background = "#2563eb";
+          btnOut.style.color = "#ffffff";
+          btnOut.style.border = "none";
+
+          tab3Title.textContent = "Exit Verification";
+          tab3Sub.textContent = "Face match & active visit";
+          tab4Title.textContent = "Exit Clearance";
+          tab4Sub.textContent = "Check-out & receipt";
+
+          if (admissionPanelContainer) admissionPanelContainer.style.display = "none";
+          if (checkoutPanelContainer) checkoutPanelContainer.style.display = "block";
+          if (pastWeekBanner) pastWeekBanner.style.display = "none";
+          if (visitedFarmsContainer) visitedFarmsContainer.style.display = "none";
+
+          if (admissionSuccessContainer) admissionSuccessContainer.style.display = "none";
+          if (checkoutSuccessContainer) checkoutSuccessContainer.style.display = "block";
+        } else {
+          btnIn.className = "button primary";
+          btnIn.style.background = "var(--green)";
+          btnIn.style.color = "#ffffff";
+          btnIn.style.border = "none";
+
+          btnOut.className = "button secondary";
+          btnOut.style.background = "transparent";
+          btnOut.style.color = "var(--ink)";
+          btnOut.style.border = "1px solid var(--line)";
+
+          tab3Title.textContent = "Biosecurity Check";
+          tab3Sub.textContent = "Face + 7-Day health";
+          tab4Title.textContent = "Gate Clearance";
+          tab4Sub.textContent = "Pass & alerts";
+
+          if (admissionPanelContainer) admissionPanelContainer.style.display = "block";
+          if (checkoutPanelContainer) checkoutPanelContainer.style.display = "none";
+          if (pastWeekBanner) pastWeekBanner.style.display = "flex";
+
+          if (admissionSuccessContainer) admissionSuccessContainer.style.display = "block";
+          if (checkoutSuccessContainer) checkoutSuccessContainer.style.display = "none";
+        }
+      };
+
+      function switchTab(num) {
+        [tab1, tab2, tab3, tab4].forEach((t, i) => {
+          t.classList.remove("active");
+          if (i + 1 < num) t.classList.add("completed");
+          else t.classList.remove("completed");
+        });
+        if (num === 1) tab1.classList.add("active");
+        if (num === 2) tab2.classList.add("active");
+        if (num === 3) tab3.classList.add("active");
+        if (num === 4) tab4.classList.add("active");
+
+        [stage1, stage2, stage3, stage4].forEach(s => s.classList.remove("active"));
+        if (num === 1) stage1.classList.add("active");
+        if (num === 2) stage2.classList.add("active");
+        if (num === 3) stage3.classList.add("active");
+        if (num === 4) stage4.classList.add("active");
+      }
+
+      // ==========================================
+      // CAMERA MANAGEMENT
+      // ==========================================
+      async function startCamera() {
+        if (mediaStream) return;
+        try {
+          cameraLoading.style.display = "grid";
+          mediaStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: { ideal: "user" },
+              width: { ideal: 1280 },
+              height: { ideal: 720 }
+            },
+            audio: false
+          });
+
+          gateVideo.srcObject = mediaStream;
+          await gateVideo.play();
+
+          cameraLoading.style.display = "none";
+          cameraStatusPill.textContent = "Camera Live";
+          cameraStatusPill.className = "badge verified";
+        } catch (err) {
+          console.error("Camera access failed:", err);
+          cameraLoading.innerHTML = `<div style="padding: 20px; text-align: center;">
+            <p style="color: #f87171; font-weight: 700;">Camera Access Denied or Unavailable</p>
+            <p style="font-size: 12px; margin-top: 4px;">Please permit camera access or use manual lookup.</p>
+          </div>`;
+          cameraStatusPill.textContent = "Camera Error";
+          cameraStatusPill.className = "badge high";
+        }
+      }
+
+      function stopCamera() {
+        qrScanning = false;
+        if (mediaStream) {
+          mediaStream.getTracks().forEach(t => t.stop());
+          mediaStream = null;
+        }
+      }
+
+      // ==========================================
+      // STAGE 1: CAPTURE PHOTO
+      // ==========================================
+      function captureGatePhoto() {
+        if (!gateVideo.videoWidth) return;
+
+        gateCanvas.width = gateVideo.videoWidth;
+        gateCanvas.height = gateVideo.videoHeight;
+        const ctx = gateCanvas.getContext("2d");
+        ctx.drawImage(gateVideo, 0, 0, gateCanvas.width, gateCanvas.height);
+
+        currentGatePhotoData = gateCanvas.toDataURL("image/jpeg", 0.88);
+
+        gatePreview.src = currentGatePhotoData;
+        gatePreview.style.display = "block";
+        gateVideo.style.display = "none";
+        faceGuide.style.display = "none";
+
+        btnSnapGate.style.display = "none";
+        btnRetakeGate.style.display = "inline-block";
+        btnProceedToQr.style.display = "inline-block";
+        cameraStatusPill.textContent = "Face Captured ✓";
+      }
+
+      function retakeGatePhoto() {
+        currentGatePhotoData = null;
+        gatePreview.style.display = "none";
+        gateVideo.style.display = "block";
+        faceGuide.style.display = "block";
+
+        btnSnapGate.style.display = "inline-block";
+        btnRetakeGate.style.display = "none";
+        btnProceedToQr.style.display = "none";
+        cameraStatusPill.textContent = "Camera Live";
+      }
+
+      btnSnapGate.addEventListener("click", captureGatePhoto);
+      btnRetakeGate.addEventListener("click", retakeGatePhoto);
+
+      btnProceedToQr.addEventListener("click", () => {
+        if (!currentGatePhotoData) return;
+        switchTab(2);
+        startQrScanner();
+      });
+
+      // ==========================================
+      // STAGE 2: QR SCANNER
+      // ==========================================
+      function startQrScanner() {
+        qrVideo.srcObject = mediaStream;
+        qrVideo.play();
+        qrScanning = true;
+        requestAnimationFrame(scanQrFrame);
+      }
+
+      function scanQrFrame() {
+        if (!qrScanning) return;
+
+        if (qrVideo.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && qrVideo.videoWidth > 0) {
+          const w = qrVideo.videoWidth;
+          const h = qrVideo.videoHeight;
+          gateCanvas.width = w;
+          gateCanvas.height = h;
+
+          const ctx = gateCanvas.getContext("2d", { willReadFrequently: true });
+          ctx.drawImage(qrVideo, 0, 0, w, h);
+
+          const imgData = ctx.getImageData(0, 0, w, h);
+          if (window.jsQR) {
+            const qrCode = jsQR(imgData.data, imgData.width, imgData.height, {
+              inversionAttempts: "attemptBoth"
+            });
+
+            if (qrCode && qrCode.data) {
+              const code = qrCode.data.trim().toUpperCase();
+              if (/^VST-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/i.test(code)) {
+                qrScanning = false;
+                qrStatusText.textContent = "QR Code Detected: " + code + ". Verifying status...";
+                qrStatusText.className = "terminal-status-banner info";
+                executeVerification(code);
+                return;
+              }
+            }
+          }
+        }
+
+        requestAnimationFrame(scanQrFrame);
+      }
+
+      btnBackToPhoto.addEventListener("click", () => {
+        qrScanning = false;
+        switchTab(1);
+      });
+
+      btnManualLookup.addEventListener("click", () => {
+        const code = manualCodeInput.value.trim().toUpperCase();
+        if (!code) {
+          alert("Please enter a visitor code.");
+          return;
+        }
+        qrScanning = false;
+        executeVerification(code);
+      });
+
+      // ==========================================
+      // STAGE 3: EXECUTE VERIFICATION
+      // ==========================================
+      async function executeVerification(visitorCode) {
+        activeVisitorCode = visitorCode;
+        const farmId = document.getElementById("selected-farm-id").value;
+
+        switchTab(3);
+
+        verifVisitorName.textContent = "Verifying Identity...";
+        verifVisitorMeta.textContent = visitorCode;
+        verifDecisionBadge.textContent = "EVALUATING...";
+        verifDecisionBadge.className = "badge-decision review";
+
+        if (currentGateMode === "CHECKOUT") {
+          await executeCheckoutVerification(visitorCode, farmId);
+        } else {
+          await executeAdmissionVerification(visitorCode, farmId);
+        }
+      }
+
+      async function executeAdmissionVerification(visitorCode, farmId) {
+        admissionPanelContainer.style.display = "block";
+        checkoutPanelContainer.style.display = "none";
+        pastWeekBanner.style.display = "flex";
+
+        try {
+          const resp = await fetch("/visitors/smart-gate/verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              visitorCode: visitorCode,
+              currentPhoto: currentGatePhotoData,
+              farmId: Number(farmId)
+            })
+          });
+
+          const data = await resp.json();
+          lastVerificationData = data;
+          renderAdmissionResults(data);
+        } catch (err) {
+          console.error("Verification error:", err);
+          alert("Unable to communicate with verification backend: " + err.message);
+        }
+      }
+
+      function renderAdmissionResults(data) {
+        if (!data.found) {
+          verifVisitorName.textContent = "Visitor Not Found";
+          verifDecisionBadge.textContent = "INVALID QR";
+          verifDecisionBadge.className = "badge-decision denied";
+          rejectionBox.style.display = "block";
+          rejectionReasonsList.innerHTML = `<li>No visitor found for code ${data.visitorCode}. Check registration.</li>`;
+          admissionFormBox.style.display = "none";
+          return;
+        }
+
+        verifVisitorName.textContent = data.fullName;
+        verifVisitorMeta.textContent = `${data.visitorCode} · ${data.company || "Independent"} · ${data.visitorType || "Visitor"}`;
+
+        // Photos
+        imgGatePhoto.src = data.currentPhoto || currentGatePhotoData;
+        if (data.registeredPhoto) {
+          imgRegPhoto.src = data.registeredPhoto;
+          document.getElementById("lbl-reg-date").textContent = "On File";
+        } else {
+          imgRegPhoto.src = data.currentPhoto || currentGatePhotoData;
+          document.getElementById("lbl-reg-date").textContent = "Captured at Gate (New)";
+        }
+
+        // Face Match Banner
+        if (data.faceMatch.matched) {
+          faceMatchBanner.className = "match-meter matched";
+          faceMatchText.textContent = data.faceMatch.message;
+          faceMatchScore.textContent = `✓ MATCH (${data.faceMatch.confidenceScore}%)`;
+          checkIconFace.className = "check-icon pass";
+          checkIconFace.textContent = "✓";
+          checkLblFace.textContent = `Matched (${data.faceMatch.confidenceScore}%)`;
+        } else {
+          faceMatchBanner.className = "match-meter mismatch";
+          faceMatchText.textContent = data.faceMatch.message;
+          faceMatchScore.textContent = `✗ MISMATCH (${data.faceMatch.confidenceScore}%)`;
+          checkIconFace.className = "check-icon fail";
+          checkIconFace.textContent = "✗";
+          checkLblFace.textContent = `Mismatch (${data.faceMatch.confidenceScore}%)`;
+        }
+
+        // 7-Day Farm Sickness Check
+        const pastWeek = data.pastWeekExposure;
+        if (pastWeek.safe) {
+          pastWeekBanner.className = "terminal-status-banner info";
+          pastWeekTitle.textContent = "All Visited Farms Healthy ✓";
+          pastWeekDesc.textContent = pastWeek.message;
+          checkIconPastWeek.className = "check-icon pass";
+          checkIconPastWeek.textContent = "✓";
+          checkLblPastWeek.textContent = "All Healthy";
+        } else {
+          pastWeekBanner.className = "terminal-status-banner danger";
+          pastWeekTitle.textContent = "Critical Biosecurity Risk: Sick Farm Visited ✗";
+          pastWeekDesc.textContent = pastWeek.message;
+          checkIconPastWeek.className = "check-icon fail";
+          checkIconPastWeek.textContent = "✗";
+          checkLblPastWeek.textContent = "Sick Farm Contact";
+        }
+
+        // Visited farms breakdown
+        if (pastWeek.exposures && pastWeek.exposures.length > 0) {
+          visitedFarmsContainer.style.display = "block";
+          visitedFarmsTbody.innerHTML = pastWeek.exposures.map(exp => `
+            <tr>
+              <td><strong>${exp.farmName}</strong> <small class="muted">${exp.farmType || ""}</small></td>
+              <td>${exp.latestVisitTime ? exp.latestVisitTime.substring(0, 10) : "Recent"}</td>
+              <td>
+                <span class="badge ${exp.reportingSick ? 'high' : 'low'}">
+                  ${exp.reportingSick ? 'SICK REPORTED' : 'HEALTHY'}
+                </span>
+              </td>
+            </tr>
+          `).join("");
+        } else {
+          visitedFarmsContainer.style.display = "none";
+        }
+
+        // Checklist states
+        const verif = data.verificationResult;
+        checkIconAccount.className = "check-icon pass";
+        checkLblAccount.textContent = "ACTIVE";
+
+        if (verif.reasons.some(r => r.toLowerCase().includes("licence"))) {
+          checkIconLicence.className = "check-icon fail";
+          checkLblLicence.textContent = "NOT VERIFIED / EXPIRED";
+        } else {
+          checkIconLicence.className = "check-icon pass";
+          checkLblLicence.textContent = "VERIFIED";
+        }
+
+        if (data.alreadyActiveVisit) {
+          checkIconActive.className = "check-icon fail";
+          checkLblActive.textContent = `Already active at ${data.activeVisitFarmName}`;
+        } else {
+          checkIconActive.className = "check-icon pass";
+          checkLblActive.textContent = "No active visit";
+        }
+
+        // Final Decision Display
+        if (data.canAdmit) {
+          verifDecisionBadge.textContent = "ENTRY APPROVED";
+          verifDecisionBadge.className = "badge-decision allowed";
+          rejectionBox.style.display = "none";
+          admissionFormBox.style.display = "block";
+        } else {
+          verifDecisionBadge.textContent = verif.decision === "DENIED" ? "ENTRY NOT PERMITTED" : "REVIEW REQUIRED";
+          verifDecisionBadge.className = verif.decision === "DENIED" ? "badge-decision denied" : "badge-decision review";
+          admissionFormBox.style.display = "none";
+          rejectionBox.style.display = "block";
+
+          let allReasons = [...verif.reasons];
+          if (!data.faceMatch.matched) {
+            allReasons.unshift(data.faceMatch.message);
+          }
+          if (!pastWeek.safe) {
+            allReasons.unshift("Visited a farm within the past 7 days reporting sick livestock.");
+          }
+          if (data.alreadyActiveVisit) {
+            allReasons.push(`Visitor is already checked in to ${data.activeVisitFarmName}. Please checkout first.`);
+          }
+
+          rejectionReasonsList.innerHTML = allReasons.map(r => `<li>${r}</li>`).join("");
+        }
+      }
+
+      async function executeCheckoutVerification(visitorCode, farmId) {
+        admissionPanelContainer.style.display = "none";
+        checkoutPanelContainer.style.display = "block";
+        pastWeekBanner.style.display = "none";
+        visitedFarmsContainer.style.display = "none";
+
+        try {
+          const resp = await fetch("/visitors/smart-gate/checkout-verify", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              visitorCode: visitorCode,
+              currentPhoto: currentGatePhotoData,
+              farmId: Number(farmId)
+            })
+          });
+
+          const data = await resp.json();
+          lastVerificationData = data;
+          renderCheckoutVerificationResults(data);
+        } catch (err) {
+          console.error("Checkout verification error:", err);
+          alert("Unable to communicate with checkout verification backend: " + err.message);
+        }
+      }
+
+      function renderCheckoutVerificationResults(data) {
+        if (!data.found) {
+          verifVisitorName.textContent = "Visitor Not Found";
+          verifDecisionBadge.textContent = "INVALID QR";
+          verifDecisionBadge.className = "badge-decision denied";
+          rejectionBox.style.display = "block";
+          rejectionReasonsList.innerHTML = `<li>No visitor found for code ${data.visitorCode}. Check registration.</li>`;
+          checkoutFormBox.style.display = "none";
+          return;
+        }
+
+        verifVisitorName.textContent = data.fullName;
+        verifVisitorMeta.textContent = `${data.visitorCode} · ${data.company || "Independent"} · ${data.visitorType || "Visitor"}`;
+
+        // Photos
+        imgGatePhoto.src = data.currentPhoto || currentGatePhotoData;
+        if (data.registeredPhoto) {
+          imgRegPhoto.src = data.registeredPhoto;
+          document.getElementById("lbl-reg-date").textContent = "On File";
+        } else {
+          imgRegPhoto.src = data.currentPhoto || currentGatePhotoData;
+          document.getElementById("lbl-reg-date").textContent = "Captured at Gate (New)";
+        }
+
+        // Face Match Banner
+        if (data.faceMatch && data.faceMatch.matched) {
+          faceMatchBanner.className = "match-meter matched";
+          faceMatchText.textContent = data.faceMatch.message;
+          faceMatchScore.textContent = `✓ MATCH (${data.faceMatch.confidenceScore}%)`;
+          coCheckIconFace.className = "check-icon pass";
+          coCheckIconFace.textContent = "✓";
+          coCheckLblFace.textContent = `Matched (${data.faceMatch.confidenceScore}%)`;
+        } else {
+          faceMatchBanner.className = "match-meter mismatch";
+          faceMatchText.textContent = data.faceMatch ? data.faceMatch.message : "Face mismatch";
+          faceMatchScore.textContent = `✗ MISMATCH (${data.faceMatch ? data.faceMatch.confidenceScore : 0}%)`;
+          coCheckIconFace.className = "check-icon fail";
+          coCheckIconFace.textContent = "✗";
+          coCheckLblFace.textContent = `Mismatch (${data.faceMatch ? data.faceMatch.confidenceScore : 0}%)`;
+        }
+
+        // Active Session Info
+        coFarmName.textContent = data.farmName || "Current Farm";
+        coPassCode.textContent = data.passCode || "N/A";
+        coCheckinTime.textContent = data.checkInTimeFormatted || "N/A";
+        coElapsedTime.textContent = data.elapsedDuration || "Active";
+
+        if (data.hasActiveVisit) {
+          coCheckIconSession.className = "check-icon pass";
+          coCheckIconSession.textContent = "✓";
+          coCheckLblSession.textContent = "ACTIVE VISIT SESSION FOUND";
+        } else {
+          coCheckIconSession.className = "check-icon fail";
+          coCheckIconSession.textContent = "✗";
+          coCheckLblSession.textContent = "NO ACTIVE VISIT ON RECORD";
+        }
+
+        if (data.canCheckOut) {
+          verifDecisionBadge.textContent = "EXIT AUTHORIZED";
+          verifDecisionBadge.className = "badge-decision allowed";
+          rejectionBox.style.display = "none";
+          checkoutFormBox.style.display = "block";
+        } else {
+          verifDecisionBadge.textContent = "EXIT DENIED";
+          verifDecisionBadge.className = "badge-decision denied";
+          checkoutFormBox.style.display = "none";
+          rejectionBox.style.display = "block";
+          rejectionReasonsList.innerHTML = `<li>${data.message || "Cannot authorize checkout."}</li>`;
+        }
+      }
+
+      btnCancelAdmission.addEventListener("click", () => {
+        resetGateTerminal();
+      });
+
+      // ==========================================
+      // STAGE 4: ADMIT VISITOR & SYNC NOTIFICATIONS
+      // ==========================================
+      btnAdmitVisitor.addEventListener("click", async () => {
+        if (!activeVisitorCode) return;
+
+        const farmId = document.getElementById("selected-farm-id").value;
+        const purpose = document.getElementById("admit-purpose").value;
+        const vehicle = document.getElementById("admit-vehicle").value;
+
+        btnAdmitVisitor.disabled = true;
+        btnAdmitVisitor.innerHTML = `<span class="spinner"></span> Admitting &amp; Alerting Admins...`;
+
+        try {
+          const resp = await fetch("/visitors/smart-gate/admit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              visitorCode: activeVisitorCode,
+              farmId: Number(farmId),
+              purpose: purpose,
+              vehicleNumber: vehicle,
+              currentPhoto: currentGatePhotoData
+            })
+          });
+
+          const res = await resp.json();
+          if (res.success) {
+            renderAdmissionSuccess(res);
+          } else {
+            alert("Admission failed: " + res.message);
+            btnAdmitVisitor.disabled = false;
+            btnAdmitVisitor.innerHTML = `⚡ ADMIT VISITOR TO FARM`;
+          }
+        } catch (err) {
+          console.error("Admission error:", err);
+          alert("Error executing admission: " + err.message);
+          btnAdmitVisitor.disabled = false;
+          btnAdmitVisitor.innerHTML = `⚡ ADMIT VISITOR TO FARM`;
+        }
+      });
+
+      function renderAdmissionSuccess(res) {
+        switchTab(4);
+        admissionSuccessContainer.style.display = "block";
+        checkoutSuccessContainer.style.display = "none";
+
+        epassFarmName.textContent = res.farmName;
+        epassCode.textContent = res.passCode;
+        epassTime.textContent = res.checkInTime;
+        epassVisitorName.textContent = res.visitorName;
+        epassValidUntil.textContent = res.passValidUntil;
+
+        notifEmailStatus.innerHTML = res.emailSent
+          ? `📧 Gmail API: <strong style="color: var(--green);">Sent to Admins ✓</strong>`
+          : `📧 Gmail API: <span class="muted">Configured</span>`;
+
+        notifWhatsappStatus.innerHTML = res.whatsappSent
+          ? `📱 Twilio WhatsApp: <strong style="color: var(--green);">Sent to Admins ✓</strong>`
+          : `📱 Twilio WhatsApp: <span class="muted">Configured</span>`;
+      }
+
+      // ==========================================
+      // STAGE 4: CHECKOUT VISITOR & SYNC NOTIFICATIONS
+      // ==========================================
+      btnCheckoutVisitor.addEventListener("click", async () => {
+        if (!activeVisitorCode) return;
+        const farmId = document.getElementById("selected-farm-id").value;
+
+        btnCheckoutVisitor.disabled = true;
+        btnCheckoutVisitor.innerHTML = `<span class="spinner"></span> Recording Exit &amp; Alerting Admins...`;
+
+        try {
+          const resp = await fetch("/visitors/smart-gate/checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              visitorCode: activeVisitorCode,
+              farmId: Number(farmId),
+              currentPhoto: currentGatePhotoData
+            })
+          });
+
+          const res = await resp.json();
+          if (res.success) {
+            renderCheckoutSuccess(res);
+          } else {
+            alert("Checkout failed: " + res.message);
+            btnCheckoutVisitor.disabled = false;
+            btnCheckoutVisitor.innerHTML = `🚪 AUTHORIZE GATE EXIT &amp; CHECK OUT`;
+          }
+        } catch (err) {
+          console.error("Checkout error:", err);
+          alert("Error executing checkout: " + err.message);
+          btnCheckoutVisitor.disabled = false;
+          btnCheckoutVisitor.innerHTML = `🚪 AUTHORIZE GATE EXIT &amp; CHECK OUT`;
+        }
+      });
+
+      function renderCheckoutSuccess(res) {
+        switchTab(4);
+        admissionSuccessContainer.style.display = "none";
+        checkoutSuccessContainer.style.display = "block";
+
+        coReceiptFarmName.textContent = res.farmName;
+        coReceiptCode.textContent = res.passCode || activeVisitorCode;
+        coReceiptDuration.textContent = res.duration || "Session Closed";
+        coReceiptVisitorName.textContent = res.visitorName;
+        coReceiptCheckinTime.textContent = res.checkInTime || "Recorded";
+        coReceiptCheckoutTime.textContent = res.checkOutTime || "Just Now";
+
+        coNotifEmailStatus.innerHTML = res.emailSent
+          ? `📧 Gmail API: <strong style="color: var(--green);">Exit Log Sent to Admins ✓</strong>`
+          : `📧 Gmail API: <span class="muted">Configured</span>`;
+
+        coNotifWhatsappStatus.innerHTML = res.whatsappSent
+          ? `📱 Twilio WhatsApp: <strong style="color: var(--green);">Exit Log Sent to Admins ✓</strong>`
+          : `📱 Twilio WhatsApp: <span class="muted">Configured</span>`;
+      }
+
+      function resetGateTerminal() {
+        currentGatePhotoData = null;
+        activeVisitorCode = null;
+        lastVerificationData = null;
+        retakeGatePhoto();
+        btnAdmitVisitor.disabled = false;
+        btnAdmitVisitor.innerHTML = `⚡ ADMIT VISITOR TO FARM`;
+        btnCheckoutVisitor.disabled = false;
+        btnCheckoutVisitor.innerHTML = `🚪 AUTHORIZE GATE EXIT &amp; CHECK OUT`;
+        switchTab(1);
+      }
+
+      btnNextVisitor.addEventListener("click", resetGateTerminal);
+      btnNextVisitorCo.addEventListener("click", resetGateTerminal);
+
+      // Initialize on load
+      window.addEventListener("load", () => {
+        startCamera();
+      });
+
+      window.addEventListener("beforeunload", () => {
+        stopCamera();
+      });
+    </script>
+  </body>
+</html>

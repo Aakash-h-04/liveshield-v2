@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: liveshield-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: liveshield
+      POSTGRES_USER: liveshield
+      POSTGRES_PASSWORD: liveshield
+    ports:
+      - "5432:5432"
+    volumes:
+      - liveshield_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U liveshield -d liveshield"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: liveshield-app
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8081:8081"
+    environment:
+      DATABASE_URL: jdbc:postgresql://postgres:5432/liveshield
+      DATABASE_USERNAME: liveshield
+      DATABASE_PASSWORD: liveshield
+      PORT: 8081
+    env_file:
+      - path: .env
+        required: false
+
+volumes:
+  liveshield_pgdata:

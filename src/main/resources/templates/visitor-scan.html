@@ -1,0 +1,424 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>LiveShield · Scan Visitor</title>
+
+    <link rel="stylesheet" href="/css/app.css" />
+    <script src="/js/theme.js"></script>
+
+    <style>
+      .scanner-box {
+        max-width: 620px;
+        margin: 0 auto;
+      }
+
+      .camera-frame {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 4 / 3;
+        background: #18221d;
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      #camera {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
+
+      .scan-frame {
+        position: absolute;
+        width: 220px;
+        height: 220px;
+        left: 50%;
+        top: 50%;
+        transform: translate(-50%, -50%);
+        border: 2px solid #ffffff;
+        border-radius: 12px;
+        box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.25);
+        pointer-events: none;
+      }
+
+      .scan-status {
+        margin-top: 15px;
+        padding: 12px;
+        border-radius: 6px;
+        background: var(--green-soft);
+        color: var(--ink);
+        font-size: 14px;
+      }
+
+      .scanner-actions {
+        margin-top: 18px;
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+      }
+
+      .manual-lookup {
+        margin-top: 25px;
+      }
+
+      #qr-canvas {
+        display: none;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">LS</div>
+
+          <div>
+            <strong>LiveShield</strong>
+            <small>Biosecurity Portal</small>
+          </div>
+        </div>
+
+        <nav>
+          <a href="/"> Dashboard </a>
+
+          <a class="active" href="/visitors"> Visitors </a>
+
+          <a href="/guides"> Guides </a>
+
+          <a href="/alerts"> Alerts </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <a href="/farms/new"> + Add Farm </a>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow"> VISITOR MANAGEMENT </span>
+
+            <h1>Scan Visitor</h1>
+          </div>
+        </header>
+
+        <section class="welcome">
+          <div>
+            <h2>Scan Visitor QR</h2>
+
+            <p>
+              Scan the visitor's permanent LiveShield QR code to retrieve their
+              registered profile.
+            </p>
+          </div>
+
+          <a href="/visitors" class="button secondary"> ← Visitors </a>
+        </section>
+
+        <section class="panel scanner-box">
+          <div class="panel-head">
+            <div>
+              <h3>Camera Scanner</h3>
+
+              <p>Position the visitor's QR code inside the frame.</p>
+            </div>
+          </div>
+
+          <div class="camera-frame">
+            <video id="camera" autoplay muted playsinline></video>
+
+            <div class="scan-frame"></div>
+          </div>
+
+          <canvas id="qr-canvas"> </canvas>
+
+          <div id="scan-status" class="scan-status">Starting camera...</div>
+
+          <div class="scanner-actions">
+            <button id="start-camera" class="button primary" type="button">
+              Start Camera
+            </button>
+
+            <button id="stop-camera" class="button secondary" type="button">
+              Stop Camera
+            </button>
+          </div>
+
+          <!-- MANUAL FALLBACK -->
+          <div class="manual-lookup">
+            <div class="panel-head">
+              <div>
+                <h3>Manual lookup</h3>
+
+                <p>Use this if the camera cannot scan the QR code.</p>
+              </div>
+            </div>
+
+            <form action="/visitors/lookup" method="get">
+              <label>
+                Visitor ID
+
+                <input
+                  type="text"
+                  name="visitorCode"
+                  placeholder="VST-XXXX-XXXX-XXXX"
+                  required
+                />
+              </label>
+
+              <div class="form-actions">
+                <button type="submit" class="button secondary">
+                  Find Visitor
+                </button>
+              </div>
+            </form>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- QR DECODER -->
+    <!-- QR DECODER -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
+    <script>
+      const video = document.getElementById("camera");
+      const canvas = document.getElementById("qr-canvas");
+      const context = canvas.getContext("2d", {
+        willReadFrequently: true,
+      });
+
+      const status = document.getElementById("scan-status");
+      const startButton = document.getElementById("start-camera");
+      const stopButton = document.getElementById("stop-camera");
+
+      let stream = null;
+      let scanning = false;
+      let redirecting = false;
+
+      async function startCamera() {
+        if (scanning) {
+          return;
+        }
+
+        if (!window.jsQR) {
+          status.textContent =
+            "QR scanner library could not be loaded. Please refresh the page.";
+          console.error("jsQR library is not available.");
+          return;
+        }
+
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          status.textContent =
+            "Camera is not supported by this browser. Please use manual lookup.";
+          return;
+        }
+
+        try {
+          status.textContent = "Requesting camera access...";
+
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: {
+                ideal: "environment",
+              },
+              width: {
+                ideal: 1280,
+              },
+              height: {
+                ideal: 720,
+              },
+            },
+            audio: false,
+          });
+
+          video.srcObject = stream;
+
+          await video.play();
+
+          scanning = true;
+          redirecting = false;
+
+          status.textContent =
+            "Camera active. Place the QR code inside the box.";
+
+          requestAnimationFrame(scanFrame);
+        } catch (error) {
+          console.error("Camera error:", error);
+
+          if (error.name === "NotAllowedError") {
+            status.textContent =
+              "Camera permission was denied. Allow camera access and try again.";
+          } else if (error.name === "NotFoundError") {
+            status.textContent = "No camera was found on this device.";
+          } else if (error.name === "NotReadableError") {
+            status.textContent =
+              "Camera is already being used by another application.";
+          } else {
+            status.textContent =
+              "Unable to start camera. Please use manual lookup.";
+          }
+        }
+      }
+
+      function stopCamera() {
+        scanning = false;
+
+        if (stream) {
+          stream.getTracks().forEach((track) => {
+            track.stop();
+          });
+
+          stream = null;
+        }
+
+        video.srcObject = null;
+
+        status.textContent = "Camera stopped.";
+      }
+
+      function scanFrame() {
+        if (!scanning || redirecting) {
+          return;
+        }
+
+        if (
+          video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA &&
+          video.videoWidth > 0 &&
+          video.videoHeight > 0
+        ) {
+          const width = video.videoWidth;
+          const height = video.videoHeight;
+
+          /*
+           * Scan the central region first.
+           * This corresponds roughly to the visible scan box.
+           */
+          const size = Math.min(width, height) * 0.65;
+
+          const sx = (width - size) / 2;
+          const sy = (height - size) / 2;
+
+          canvas.width = Math.floor(size);
+          canvas.height = Math.floor(size);
+
+          context.drawImage(
+            video,
+            sx,
+            sy,
+            size,
+            size,
+            0,
+            0,
+            canvas.width,
+            canvas.height,
+          );
+
+          let imageData = context.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height,
+          );
+
+          let result = jsQR(imageData.data, imageData.width, imageData.height, {
+            inversionAttempts: "attemptBoth",
+          });
+
+          /*
+           * If central scan failed, scan the complete camera frame.
+           */
+          if (!result) {
+            canvas.width = width;
+            canvas.height = height;
+
+            context.drawImage(video, 0, 0, width, height, 0, 0, width, height);
+
+            imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+
+            result = jsQR(imageData.data, imageData.width, imageData.height, {
+              inversionAttempts: "attemptBoth",
+            });
+          }
+
+          if (result) {
+            handleQrResult(result.data);
+            return;
+          }
+        }
+
+        requestAnimationFrame(scanFrame);
+      }
+
+      function handleQrResult(value) {
+        if (redirecting) {
+          return;
+        }
+
+        const scannedValue = value.trim();
+
+        console.log("QR detected:", scannedValue);
+
+        /*
+         * Accept exactly the LiveShield visitor ID format:
+         *
+         * VST-XXXX-XXXX-XXXX
+         */
+        const visitorCodePattern = /^VST-[A-Z0-9]+-[A-Z0-9]+-[A-Z0-9]+$/i;
+
+        if (!visitorCodePattern.test(scannedValue)) {
+          status.textContent =
+            "QR detected, but it is not a valid LiveShield visitor ID.";
+
+          return;
+        }
+
+        redirecting = true;
+        scanning = false;
+
+        status.textContent = "Visitor identified. Loading profile...";
+
+        if (stream) {
+          stream.getTracks().forEach((track) => {
+            track.stop();
+          });
+
+          stream = null;
+        }
+
+        /*
+         * IMPORTANT:
+         * Use the exact value returned by the QR scanner.
+         */
+        const encodedVisitorCode = encodeURIComponent(
+          scannedValue.toUpperCase(),
+        );
+
+        const lookupUrl = "/visitors/lookup?visitorCode=" + encodedVisitorCode;
+
+        console.log("Redirecting to:", lookupUrl);
+
+        window.location.assign(lookupUrl);
+      }
+
+      startButton.addEventListener("click", startCamera);
+
+      stopButton.addEventListener("click", stopCamera);
+
+      window.addEventListener("beforeunload", stopCamera);
+
+      /*
+       * Automatically start the camera when the page loads.
+       */
+      window.addEventListener("load", () => {
+        startCamera();
+      });
+    </script>
+  </body>
+</html>

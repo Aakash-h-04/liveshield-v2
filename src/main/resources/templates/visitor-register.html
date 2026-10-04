@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <title>LiveShield · Register Visitor</title>
+
+    <link rel="stylesheet" href="/css/app.css" />
+    <script src="/js/theme.js"></script>
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">LS</div>
+
+          <div>
+            <strong>LiveShield</strong>
+            <small>Biosecurity Portal</small>
+          </div>
+        </div>
+
+        <nav>
+          <a href="/">Dashboard</a>
+
+          <a href="/visitors" class="active"> Visitors </a>
+
+          <a href="/guides"> Guides </a>
+
+          <a href="/alerts"> Alerts </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <a href="/farms/new"> + Add Farm </a>
+        </div>
+      </aside>
+
+      <!-- MAIN -->
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <span class="eyebrow"> VISITOR MANAGEMENT </span>
+
+            <h1>Register Visitor</h1>
+          </div>
+        </header>
+
+        <section class="welcome">
+          <div>
+            <h2>Create a verified visitor identity</h2>
+
+            <p>
+              Register the visitor once. Their LiveShield identity can then be
+              used for future farm visits.
+            </p>
+          </div>
+
+          <a href="/visitors" class="button secondary"> ← Visitors </a>
+        </section>
+
+        <!-- ERROR -->
+        <div th:if="${error}" class="form-error" th:text="${error}">Error</div>
+
+        <form method="post" action="/visitors/register" class="form-card">
+          <!-- BASIC INFORMATION -->
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Visitor information</h3>
+
+                <p>Basic information used to identify the visitor.</p>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <label>
+                Full name
+
+                <input
+                  type="text"
+                  name="fullName"
+                  th:value="${visitor.fullName}"
+                  placeholder="Enter full name"
+                  required
+                />
+              </label>
+
+              <label>
+                Mobile number
+
+                <input
+                  type="tel"
+                  name="mobile"
+                  th:value="${visitor.mobile}"
+                  placeholder="Enter mobile number"
+                  required
+                />
+              </label>
+
+              <label>
+                Email
+
+                <input
+                  type="email"
+                  name="email"
+                  th:value="${visitor.email}"
+                  placeholder="Optional"
+                />
+              </label>
+
+              <label>
+                Company / organization
+
+                <input
+                  type="text"
+                  name="companyName"
+                  th:value="${visitor.companyName}"
+                  placeholder="Vendor / distributor / organization"
+                />
+              </label>
+
+              <label>
+                Visitor type
+
+                <select name="visitorType" required>
+                  <option value="">Select type</option>
+
+                  <option value="VENDOR">Vendor</option>
+
+                  <option value="DISTRIBUTOR">Distributor</option>
+
+                  <option value="VETERINARIAN">Veterinarian</option>
+
+                  <option value="TECHNICIAN">
+                    Technician / Service Provider
+                  </option>
+
+                  <option value="TRANSPORTER">
+                    Livestock / Feed Transporter
+                  </option>
+
+                  <option value="INSPECTOR">Inspector / Official</option>
+
+                  <option value="OTHER">Other</option>
+                </select>
+              </label>
+
+              <label>
+                Address
+
+                <input
+                  type="text"
+                  name="address"
+                  th:value="${visitor.address}"
+                  placeholder="City / district"
+                />
+              </label>
+            </div>
+          </section>
+
+          <!-- ID -->
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Identity verification</h3>
+
+                <p>Record the identity reference used during verification.</p>
+              </div>
+            </div>
+
+            <div class="form-grid">
+              <label>
+                ID type
+
+                <select name="idType">
+                  <option value="">Select ID type</option>
+
+                  <option value="GOVERNMENT_ID">Government ID</option>
+
+                  <option value="BUSINESS_ID">Business ID</option>
+
+                  <option value="LICENSE">Licence</option>
+
+                  <option value="OTHER">Other</option>
+                </select>
+              </label>
+
+              <label>
+                ID reference
+
+                <input
+                  type="text"
+                  name="idReference"
+                  th:value="${visitor.idReference}"
+                  placeholder="Reference number"
+                />
+              </label>
+            </div>
+          </section>
+
+          <!-- LICENCE -->
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Professional licence</h3>
+
+                <p>
+                  Required for vendors, distributors and other regulated
+                  farm-service visitors.
+                </p>
+              </div>
+
+              <span class="status-badge"> Verification required </span>
+            </div>
+
+            <div class="form-grid">
+              <label>
+                Licence number
+
+                <input
+                  type="text"
+                  name="licenceNumber"
+                  th:value="${licence.licenceNumber}"
+                  placeholder="Licence number"
+                  required
+                />
+              </label>
+
+              <label>
+                Licence type
+
+                <select name="licenceType" required>
+                  <option value="">Select licence type</option>
+
+                  <option value="FEED_DISTRIBUTOR">Feed Distributor</option>
+
+                  <option value="VETERINARY">Veterinary</option>
+
+                  <option value="LIVESTOCK_TRANSPORT">
+                    Livestock Transport
+                  </option>
+
+                  <option value="EQUIPMENT_VENDOR">Equipment Vendor</option>
+
+                  <option value="OTHER">Other</option>
+                </select>
+              </label>
+
+              <label>
+                Issuing authority
+
+                <input
+                  type="text"
+                  name="issuingAuthority"
+                  th:value="${licence.issuingAuthority}"
+                  placeholder="Issuing authority"
+                />
+              </label>
+
+              <label>
+                Issue date
+
+                <input
+                  type="date"
+                  name="issueDate"
+                  th:value="${licence.issueDate}"
+                />
+              </label>
+
+              <label>
+                Expiry date
+
+                <input
+                  type="date"
+                  name="expiryDate"
+                  th:value="${licence.expiryDate}"
+                  required
+                />
+              </label>
+            </div>
+          </section>
+
+          <!-- BIOMETRIC REFERENCE PHOTO -->
+          <section class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Biometric reference photo</h3>
+                <p>
+                  Capture the visitor's face for biometric identification at farm smart gates.
+                </p>
+              </div>
+
+              <span id="photo-status-badge" class="badge">
+                Recommended
+              </span>
+            </div>
+
+            <div class="photo-capture-box">
+              <div class="camera-frame photo-frame" id="reg-camera-container" style="max-width: 420px; margin: 0 auto;">
+                <video id="reg-camera" autoplay muted playsinline style="display: none; width: 100%; height: 100%; object-fit: cover;"></video>
+                <div id="face-guide" class="face-guide-oval" style="display: none;"></div>
+                <img id="photo-preview" class="photo-preview-img" style="display: none;" alt="Captured Photo Preview" />
+                <div id="camera-placeholder" style="color: var(--muted); text-align: center; padding: 30px 15px;">
+                  <div style="font-size: 32px; margin-bottom: 8px;">📷</div>
+                  <strong>No camera active</strong>
+                  <p style="font-size: 12px; margin-top: 4px;">Click "Start Camera" or upload a photo</p>
+                </div>
+              </div>
+
+              <!-- Hidden canvas for image capture -->
+              <canvas id="reg-canvas" style="display: none;"></canvas>
+
+              <!-- Form input bound to Visitor entity -->
+              <input type="hidden" name="photo" id="photoInput" />
+
+              <div class="scanner-actions" style="justify-content: center; margin-top: 16px;">
+                <button id="btn-start-reg-camera" type="button" class="button secondary">
+                  📷 Start Camera
+                </button>
+                <button id="btn-snap-photo" type="button" class="button primary" style="display: none;">
+                  ⚡ Capture Photo
+                </button>
+                <button id="btn-retake-photo" type="button" class="button secondary" style="display: none;">
+                  ↺ Retake
+                </button>
+                <label class="button secondary" style="cursor: pointer; display: inline-flex; align-items: center; margin: 0;">
+                  📁 Upload Photo
+                  <input type="file" id="file-upload" accept="image/*" style="display: none;" />
+                </label>
+              </div>
+
+              <div id="reg-photo-feedback" class="muted" style="text-align: center; margin-top: 10px; font-size: 12px;">
+                Photo is used strictly for identity verification at Smart Gate entry points.
+              </div>
+            </div>
+          </section>
+
+          <!-- ACTIONS -->
+          <div class="form-actions">
+            <a href="/visitors" class="button secondary"> Cancel </a>
+
+            <button type="submit" class="button primary">
+              Register Visitor
+            </button>
+          </div>
+        </form>
+      </main>
+    </div>
+
+    <script>
+      const regVideo = document.getElementById("reg-camera");
+      const regCanvas = document.getElementById("reg-canvas");
+      const regPreview = document.getElementById("photo-preview");
+      const faceGuide = document.getElementById("face-guide");
+      const placeholder = document.getElementById("camera-placeholder");
+      const photoInput = document.getElementById("photoInput");
+      const statusBadge = document.getElementById("photo-status-badge");
+      const feedback = document.getElementById("reg-photo-feedback");
+
+      const btnStart = document.getElementById("btn-start-reg-camera");
+      const btnSnap = document.getElementById("btn-snap-photo");
+      const btnRetake = document.getElementById("btn-retake-photo");
+      const fileUpload = document.getElementById("file-upload");
+
+      let regStream = null;
+
+      async function startRegistrationCamera() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          feedback.textContent = "Camera access is not supported by your browser. Please upload a photo.";
+          return;
+        }
+
+        try {
+          feedback.textContent = "Starting camera...";
+          regStream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "user",
+              width: { ideal: 640 },
+              height: { ideal: 480 }
+            },
+            audio: false
+          });
+
+          regVideo.srcObject = regStream;
+          await regVideo.play();
+
+          regVideo.style.display = "block";
+          faceGuide.style.display = "block";
+          placeholder.style.display = "none";
+          regPreview.style.display = "none";
+
+          btnStart.style.display = "none";
+          btnSnap.style.display = "inline-block";
+          btnRetake.style.display = "none";
+
+          feedback.textContent = "Position face inside oval guide and click 'Capture Photo'.";
+        } catch (err) {
+          console.error("Camera access error:", err);
+          feedback.textContent = "Unable to access camera: " + err.message + ". You can upload a photo instead.";
+        }
+      }
+
+      function capturePhoto() {
+        if (!regVideo.videoWidth) return;
+
+        regCanvas.width = regVideo.videoWidth;
+        regCanvas.height = regVideo.videoHeight;
+        const ctx = regCanvas.getContext("2d");
+        ctx.drawImage(regVideo, 0, 0, regCanvas.width, regCanvas.height);
+
+        const dataUrl = regCanvas.toDataURL("image/jpeg", 0.88);
+        setCapturedPhoto(dataUrl);
+        stopRegistrationCamera();
+      }
+
+      function stopRegistrationCamera() {
+        if (regStream) {
+          regStream.getTracks().forEach(track => track.stop());
+          regStream = null;
+        }
+        regVideo.srcObject = null;
+        regVideo.style.display = "none";
+        faceGuide.style.display = "none";
+      }
+
+      function setCapturedPhoto(dataUrl) {
+        photoInput.value = dataUrl;
+        regPreview.src = dataUrl;
+        regPreview.style.display = "block";
+        placeholder.style.display = "none";
+
+        btnStart.style.display = "none";
+        btnSnap.style.display = "none";
+        btnRetake.style.display = "inline-block";
+
+        statusBadge.textContent = "Photo Captured ✓";
+        statusBadge.className = "badge verified";
+        feedback.textContent = "Face photo recorded successfully for Smart Gate biosecurity checks.";
+      }
+
+      function retakePhoto() {
+        photoInput.value = "";
+        regPreview.src = "";
+        regPreview.style.display = "none";
+        statusBadge.textContent = "Required";
+        statusBadge.className = "badge";
+        startRegistrationCamera();
+      }
+
+      btnStart.addEventListener("click", startRegistrationCamera);
+      btnSnap.addEventListener("click", capturePhoto);
+      btnRetake.addEventListener("click", retakePhoto);
+
+      fileUpload.addEventListener("change", function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+          stopRegistrationCamera();
+          setCapturedPhoto(evt.target.result);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      window.addEventListener("beforeunload", stopRegistrationCamera);
+    </script>
+  </body>
+</html>

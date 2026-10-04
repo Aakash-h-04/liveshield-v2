@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>LiveShield · Add Farm</title>
+    <link rel="stylesheet" href="/css/app.css" />
+    <script src="/js/theme.js"></script>
+  </head>
+  <body>
+    <div class="form-page">
+      <div class="form-card">
+        <a class="back" href="/">← Dashboard</a
+        ><span class="eyebrow">FARM SETUP</span>
+        <h1 th:text="${farm.id != null ? 'Edit Farm' : 'Add a farm'}">Add a farm</h1>
+        <p class="muted">
+          Configure farm details and livestock capacity in PostgreSQL.
+        </p>
+        <form th:action="${farm.id != null ? '/farms/' + farm.id : '/farms'}" th:object="${farm}" method="post">
+          <label
+            >Farm name<input
+              th:field="*{name}"
+              required
+              placeholder="e.g. Green Valley Farm"
+            />
+
+            <small
+              class="form-error"
+              th:if="${#fields.hasErrors('name')}"
+              th:errors="*{name}"
+            ></small>
+          </label>
+
+          <label
+            >Owner name<input
+              th:field="*{ownerName}"
+              required
+              placeholder="Farm owner"
+            />
+
+            <small
+              class="form-error"
+              th:if="${#fields.hasErrors('ownerName')}"
+              th:errors="*{ownerName}"
+            ></small> </label
+          ><label
+            >Farm type<select th:field="*{farmType}">
+              <option value="Poultry">Poultry</option>
+              <option value="Pig">Pig</option>
+              <option value="Mixed">Mixed</option>
+            </select></label
+          ><label
+            >Location<input
+              th:field="*{location}"
+              placeholder="Village / District" /></label
+          ><label
+            >Livestock count<input
+              th:field="*{livestockCount}"
+              type="number"
+              min="0"
+              placeholder="Number of animals"
+            />
+
+            <small
+              class="form-error"
+              th:if="${#fields.hasErrors('livestockCount')}"
+              th:errors="*{livestockCount}"
+            ></small>
+          </label>
+          <div class="form-actions">
+            <a class="button secondary" href="/">Cancel</a
+            ><button class="button primary" type="submit">Save farm</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,398 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LiveShield · Database Management</title>
+    <link rel="stylesheet" href="/css/app.css" />
+    <script src="/js/theme.js"></script>
+    <style>
+      .db-tabs {
+        display: flex;
+        gap: 8px;
+        border-bottom: 2px solid var(--line);
+        margin-bottom: 24px;
+      }
+      .db-tab-btn {
+        background: transparent;
+        border: none;
+        padding: 12px 20px;
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--muted);
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        transition: all 0.2s ease;
+      }
+      .db-tab-btn.active {
+        color: var(--green);
+        border-bottom-color: var(--green);
+      }
+      .db-tab-btn:hover {
+        color: var(--ink);
+      }
+      .db-tab-content {
+        display: none;
+      }
+      .db-tab-content.active {
+        display: block;
+      }
+      .search-bar-wrap {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+      .search-bar-wrap input {
+        max-width: 380px;
+        padding: 8px 14px;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: var(--white);
+        color: var(--ink);
+      }
+      .thumb-preview {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 1px solid var(--line);
+        background: #e9ecef;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">LS</div>
+          <div>
+            <strong>LiveShield</strong>
+            <small>Biosecurity Portal</small>
+          </div>
+        </div>
+
+        <nav>
+          <a href="/">Dashboard</a>
+          <a href="/database" class="active">Database</a>
+          <a href="/visitors">Visitors</a>
+          <a href="/visitors/smart-gate">Smart Gate</a>
+          <a href="/livestock">Livestock</a>
+          <a href="/veterinary">Veterinary</a>
+          <a href="/alerts">Alerts</a>
+          <a href="/guides">Guides</a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <a href="/visitors/smart-gate" class="button primary" style="width: 100%; text-align: center; margin-bottom: 8px;">
+            ⚡ Smart Gate
+          </a>
+          <a href="/" class="button secondary" style="width: 100%; text-align: center;">
+            ← Dashboard
+          </a>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <main class="main" style="max-width: 1200px;">
+        <div class="topbar">
+          <div>
+            <h1>Database Management Console</h1>
+            <p class="muted">
+              Inspect, search, and manage all core entities stored in PostgreSQL.
+            </p>
+          </div>
+
+          <div class="top-actions">
+            <span class="badge verified" style="font-weight: 700;">PostgreSQL Connected</span>
+          </div>
+        </div>
+
+        <!-- STATS ROW -->
+        <section class="kpi-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 24px;">
+          <div class="kpi-card">
+            <span class="label">Total Visitors</span>
+            <strong class="value" th:text="${visitors.size()}">0</strong>
+            <small class="hint">Registered profiles</small>
+          </div>
+
+          <div class="kpi-card">
+            <span class="label">Total Farms</span>
+            <strong class="value" th:text="${farms.size()}">0</strong>
+            <small class="hint">Biosecurity zones</small>
+          </div>
+
+          <div class="kpi-card">
+            <span class="label">Livestock Batches</span>
+            <strong class="value" th:text="${batches.size()}">0</strong>
+            <small class="hint">Active tracking groups</small>
+          </div>
+
+          <div class="kpi-card">
+            <span class="label">Total Visits Logged</span>
+            <strong class="value" th:text="${totalVisits}">0</strong>
+            <small class="hint">All-time check-ins</small>
+          </div>
+        </section>
+
+        <!-- TABS BAR -->
+        <div class="db-tabs">
+          <button id="tab-btn-visitors" class="db-tab-btn" onclick="openDbTab('visitors')">
+            👥 Visitors (<span th:text="${visitors.size()}">0</span>)
+          </button>
+          <button id="tab-btn-farms" class="db-tab-btn" onclick="openDbTab('farms')">
+            🏡 Farms (<span th:text="${farms.size()}">0</span>)
+          </button>
+          <button id="tab-btn-batches" class="db-tab-btn" onclick="openDbTab('batches')">
+            📦 Livestock Batches (<span th:text="${batches.size()}">0</span>)
+          </button>
+        </div>
+
+        <!-- TAB 1: VISITORS DATABASE -->
+        <div id="tab-content-visitors" class="db-tab-content">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Visitors Table (`visitors`)</h3>
+                <p>Complete registry of visitor identities, biometrics, and statuses.</p>
+              </div>
+              <div class="search-bar-wrap">
+                <input id="search-visitors" type="text" placeholder="Search visitors by name, code, phone..." oninput="filterVisitorsTable()" />
+                <a href="/visitors/register" class="button primary">+ Register Visitor</a>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table id="visitors-table">
+                <thead>
+                  <tr>
+                    <th>Photo</th>
+                    <th>Name</th>
+                    <th>Visitor Code</th>
+                    <th>Mobile</th>
+                    <th>Type</th>
+                    <th>Account</th>
+                    <th>Licence</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="v : ${visitors}">
+                    <td>
+                      <img th:if="${v.photo != null}" th:src="${v.photo}" class="thumb-preview" alt="Face" />
+                      <div th:if="${v.photo == null}" class="thumb-preview" style="display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted);">No Pic</div>
+                    </td>
+                    <td>
+                      <strong th:text="${v.fullName}">Full Name</strong>
+                      <small th:if="${v.companyName != null}" th:text="${v.companyName}" style="display:block; color:var(--muted);">Company</small>
+                    </td>
+                    <td>
+                      <code style="font-size: 11px; background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px;" th:text="${v.visitorCode}">VST-XXXX</code>
+                    </td>
+                    <td th:text="${v.mobile}">—</td>
+                    <td>
+                      <span class="badge" th:text="${v.visitorType}">VET</span>
+                    </td>
+                    <td>
+                      <span th:class="${v.accountStatus == 'ACTIVE' ? 'badge verified' : 'badge high'}" th:text="${v.accountStatus}">ACTIVE</span>
+                    </td>
+                    <td>
+                      <span th:if="${licenceMap.containsKey(v.id)}"
+                            th:class="${licenceMap.get(v.id).verificationStatus == 'VERIFIED' ? 'badge verified' : (licenceMap.get(v.id).verificationStatus == 'REJECTED' ? 'badge high' : 'badge')}"
+                            th:text="${licenceMap.get(v.id).verificationStatus}">
+                        PENDING
+                      </span>
+                      <span th:if="${!licenceMap.containsKey(v.id)}" class="badge muted">NONE</span>
+                    </td>
+                    <td>
+                      <div style="display: flex; gap: 6px;">
+                        <a th:href="@{'/visitors/' + ${v.visitorCode}}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">Profile</a>
+                        <a th:if="${licenceMap.containsKey(v.id)}" th:href="@{'/visitors/licence/' + ${licenceMap.get(v.id).id} + '/review'}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">Licence</a>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: FARMS DATABASE -->
+        <div id="tab-content-farms" class="db-tab-content">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Farms Table (`farms`)</h3>
+                <p>Registered agricultural facilities and biosecurity containment units.</p>
+              </div>
+              <div class="search-bar-wrap">
+                <input id="search-farms" type="text" placeholder="Search farms by name, location..." oninput="filterFarmsTable()" />
+                <a href="/farms/new" class="button primary">+ Add Farm</a>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table id="farms-table">
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>Farm Name</th>
+                    <th>Type</th>
+                    <th>Location</th>
+                    <th>Headcount</th>
+                    <th>Risk Level</th>
+                    <th>Compliance</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="f : ${farms}">
+                    <td th:text="${f.id}">1</td>
+                    <td>
+                      <strong th:text="${f.name}">Farm Name</strong>
+                      <small th:if="${f.ownerName != null}" th:text="'Owner: ' + ${f.ownerName}" style="display:block; color:var(--muted);"></small>
+                    </td>
+                    <td>
+                      <span class="badge" th:text="${f.farmType}">Poultry</span>
+                    </td>
+                    <td th:text="${f.location ?: '—'}">—</td>
+                    <td>
+                      <strong th:text="${f.livestockCount ?: 0}">0</strong>
+                    </td>
+                    <td>
+                      <span th:class="${f.riskLevel == 'HIGH' ? 'badge high' : (f.riskLevel == 'LOW' ? 'badge verified' : 'badge')}" th:text="${f.riskLevel ?: 'LOW'}">LOW</span>
+                    </td>
+                    <td>
+                      <span style="font-weight: 700;" th:text="${(f.compliancePercent ?: 100) + '%'}">100%</span>
+                    </td>
+                    <td>
+                      <div style="display: flex; gap: 6px;">
+                        <a th:href="@{'/farms/' + ${f.id} + '/edit'}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">Edit</a>
+                        <a th:href="@{'/livestock?farmId=' + ${f.id}}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">Batches</a>
+                        <a th:href="@{'/livestock/new?farmId=' + ${f.id}}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">+ Batch</a>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 3: LIVESTOCK BATCHES DATABASE -->
+        <div id="tab-content-batches" class="db-tab-content">
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Livestock Batches Table (`livestock_batches`)</h3>
+                <p>Animal populations monitored for disease incubation and health classification.</p>
+              </div>
+              <div class="search-bar-wrap">
+                <input id="search-batches" type="text" placeholder="Search batches by code, species, health..." oninput="filterBatchesTable()" />
+                <a th:if="${!farms.isEmpty()}" th:href="@{'/livestock/new?farmId=' + ${farms.get(0).id}}" class="button primary">+ New Batch</a>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table id="batches-table">
+                <thead>
+                  <tr>
+                    <th>Batch Code</th>
+                    <th>Farm</th>
+                    <th>Species &amp; Breed</th>
+                    <th>Count</th>
+                    <th>Arrival Date</th>
+                    <th>Health Status</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr th:each="b : ${batches}">
+                    <td>
+                      <code style="font-size: 12px; font-weight:700; color:var(--ink);" th:text="${b.batchCode}">BATCH-001</code>
+                    </td>
+                    <td>
+                      <strong th:text="${b.farm != null ? b.farm.name : 'Unknown Farm'}">Farm</strong>
+                    </td>
+                    <td>
+                      <span th:text="${b.species}">Broiler</span>
+                      <small th:if="${b.breed != null}" th:text="'(' + ${b.breed} + ')'" style="color:var(--muted);"></small>
+                    </td>
+                    <td>
+                      <strong th:text="${b.animalCount}">500</strong>
+                    </td>
+                    <td th:text="${b.arrivalDate != null ? #temporals.format(b.arrivalDate, 'dd MMM yyyy') : '—'}">—</td>
+                    <td>
+                      <span th:class="${b.healthStatus == 'HEALTHY' ? 'badge verified' : (b.healthStatus == 'SICK' ? 'badge high' : 'badge')}"
+                            th:style="${b.healthStatus == 'SICK' ? 'background: #d9534f; color:#fff;' : (b.healthStatus == 'ISOLATED' ? 'background: #f0ad4e; color:#fff;' : '')}"
+                            th:text="${b.healthStatus}">
+                        HEALTHY
+                      </span>
+                    </td>
+                    <td>
+                      <a th:if="${b.farm != null}" th:href="@{'/livestock/' + ${b.id} + '/edit?farmId=' + ${b.farm.id}}" class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;">Edit</a>
+                    </td>
+                  </tr>
+                  <tr th:if="${batches.isEmpty()}">
+                    <td colspan="7" class="empty" style="text-align:center; padding: 24px;">No livestock batches recorded yet.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+      </main>
+    </div>
+
+    <!-- CLIENT SCRIPT FOR TABS & FILTERING -->
+    <script>
+      function openDbTab(tabName) {
+        const tabs = ['visitors', 'farms', 'batches'];
+        tabs.forEach(t => {
+          document.getElementById('tab-btn-' + t).classList.toggle('active', t === tabName);
+          document.getElementById('tab-content-' + t).classList.toggle('active', t === tabName);
+        });
+
+        // Update URL query param without full reload
+        const url = new URL(window.location);
+        url.searchParams.set('tab', tabName);
+        window.history.replaceState({}, '', url);
+      }
+
+      function filterVisitorsTable() {
+        const q = document.getElementById('search-visitors').value.toLowerCase();
+        const rows = document.querySelectorAll('#visitors-table tbody tr');
+        rows.forEach(r => {
+          const text = r.textContent.toLowerCase();
+          r.style.display = text.includes(q) ? '' : 'none';
+        });
+      }
+
+      function filterFarmsTable() {
+        const q = document.getElementById('search-farms').value.toLowerCase();
+        const rows = document.querySelectorAll('#farms-table tbody tr');
+        rows.forEach(r => {
+          const text = r.textContent.toLowerCase();
+          r.style.display = text.includes(q) ? '' : 'none';
+        });
+      }
+
+      function filterBatchesTable() {
+        const q = document.getElementById('search-batches').value.toLowerCase();
+        const rows = document.querySelectorAll('#batches-table tbody tr');
+        rows.forEach(r => {
+          const text = r.textContent.toLowerCase();
+          r.style.display = text.includes(q) ? '' : 'none';
+        });
+      }
+
+      // Initialize default tab from query param or 'visitors'
+      const initialTab = new URLSearchParams(window.location.search).get('tab') || 'visitors';
+      openDbTab(initialTab);
+    </script>
+  </body>
+</html>

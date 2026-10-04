@@ -1,0 +1,1195 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LiveShield · Biosecurity Operations Command</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/css/app.css" />
+    <script src="/js/theme.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  </head>
+
+  <body>
+    <div class="app-shell">
+      <!-- =========================================================
+           ENTERPRISE COMMAND SIDEBAR
+           ========================================================= -->
+      <aside class="sidebar">
+        <div class="brand">
+          <div class="brand-mark">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+          </div>
+          <div>
+            <strong>LiveShield <span class="brand-badge">PRO</span></strong>
+            <small>Biosecurity Command</small>
+          </div>
+        </div>
+
+        <div class="sidebar-section-title">Operations</div>
+        <nav>
+          <!-- Dashboard -->
+          <a class="active" href="/">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
+            </span>
+            <span>Dashboard</span>
+          </a>
+
+          <!-- Smart Gate -->
+          <a href="/visitors/smart-gate">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M3 7v14M21 7v14M12 3L3 7v1M12 3l9 4v1M9 14h6M9 18h6"></path></svg>
+            </span>
+            <span>Smart Gate</span>
+          </a>
+
+          <!-- Database -->
+          <a href="/database">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+            </span>
+            <span>Database Console</span>
+          </a>
+
+          <!-- Visitors -->
+          <a href="/visitors">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </span>
+            <span>Visitors &amp; Passes</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-section-title" style="margin-top: 14px;">Surveillance &amp; Health</div>
+        <nav>
+          <!-- Farm modules -->
+          <a th:if="${!#lists.isEmpty(farms)}" th:href="@{/livestock(farmId=${farms[0].id})}">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+            </span>
+            <span>Livestock Telemetry</span>
+          </a>
+
+          <a th:if="${!#lists.isEmpty(farms)}" th:href="@{/veterinary(farmId=${farms[0].id})}">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path></svg>
+            </span>
+            <span>Veterinary Records</span>
+          </a>
+
+          <a th:if="${!#lists.isEmpty(farms)}" th:href="@{/daily-log(farmId=${farms[0].id})}">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            </span>
+            <span>Daily Activity Logs</span>
+          </a>
+
+          <a th:if="${!#lists.isEmpty(farms)}" th:href="@{/risk-assessment(farmId=${farms[0].id})}">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            </span>
+            <span>Risk Assessment</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-section-title" style="margin-top: 14px;">System &amp; Security</div>
+        <nav>
+          <!-- Global alerts -->
+          <a href="/alerts">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            </span>
+            <span>Alerts &amp; Incidents</span>
+          </a>
+
+          <a href="/notifications/settings">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+            </span>
+            <span>Dispatch Channels</span>
+          </a>
+
+          <a th:if="${!#lists.isEmpty(farms)}" th:href="@{/compliance-passport(farmId=${farms[0].id})}">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            </span>
+            <span>Compliance Passport</span>
+          </a>
+
+          <a href="/guides">
+            <span class="nav-icon">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+            </span>
+            <span>SOP Guides</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <div class="sidebar-status-chip">
+            <span class="status-pulse-dot"></span>
+            <span>Biosecurity Grid Active</span>
+          </div>
+          <a href="/farms/new" class="button primary" style="width: 100%; justify-content: center;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+            Register Farm
+          </a>
+        </div>
+      </aside>
+
+      <!-- =========================================================
+           MAIN OPERATIONS CONSOLE
+           ========================================================= -->
+      <main class="main">
+        <!-- TOPBAR -->
+        <header class="topbar">
+          <div>
+            <span class="eyebrow">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+              Regional Biosecurity Surveillance Grid · Sector A
+            </span>
+            <h1>Operations Dashboard</h1>
+          </div>
+
+          <div class="top-actions">
+            <div class="top-system-badge">
+              <span class="status-pulse-dot"></span>
+              <span>All Systems Operational</span>
+            </div>
+            <!-- Theme toggle button dynamically mounted here by theme.js -->
+            <div class="avatar" title="LiveShield Administrator">LS</div>
+          </div>
+        </header>
+
+        <!-- WELCOME BANNER -->
+        <section class="welcome">
+          <div>
+            <h2>Biosecurity Command Center</h2>
+            <p>Unified real-time surveillance across livestock batches, perimeter gates, compliance audits and threat dispatches.</p>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: center;">
+            <a class="button secondary" href="/database">Database Console</a>
+            <a class="button primary" href="/farms/new">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              New Facility
+            </a>
+          </div>
+        </section>
+
+        <!-- QUICK ACCESS OPERATIONS HUD -->
+        <section class="quick-hud-grid">
+          <a th:if="${!#lists.isEmpty(farms)}" th:href="@{/risk-assessment(farmId=${farms[0].id})}" class="quick-hud-item">
+            <div class="quick-hud-icon">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                <path d="m9 12 2 2 4-4"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="quick-hud-title">Run Risk Audit</div>
+              <div class="quick-hud-sub">Recalculate &amp; alert grid</div>
+            </div>
+          </a>
+
+          <a href="/visitors/smart-gate" class="quick-hud-item">
+            <div class="quick-hud-icon" style="background: rgba(14, 165, 233, 0.12); color: #0284c7; border-color: rgba(14, 165, 233, 0.3);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+              </svg>
+            </div>
+            <div>
+              <div class="quick-hud-title">Smart Gate Scanner</div>
+              <div class="quick-hud-sub">Face &amp; QR access control</div>
+            </div>
+          </a>
+
+          <a href="/database" class="quick-hud-item">
+            <div class="quick-hud-icon" style="background: rgba(99, 102, 241, 0.12); color: #6366f1; border-color: rgba(99, 102, 241, 0.3);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="quick-hud-title">Database Console</div>
+              <div class="quick-hud-sub">Farms, visitors &amp; batches</div>
+            </div>
+          </a>
+
+          <a href="/alerts" class="quick-hud-item">
+            <div class="quick-hud-icon" style="background: rgba(225, 29, 72, 0.12); color: #e11d48; border-color: rgba(225, 29, 72, 0.3);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+            </div>
+            <div>
+              <div class="quick-hud-title">Biosecurity Alerts (<span th:text="${activeAlertCount}">0</span>)</div>
+              <div class="quick-hud-sub">Threat mitigation protocol</div>
+            </div>
+          </a>
+        </section>
+
+        <!-- =======================================================
+             PRIMARY KEY PERFORMANCE TELEMETRY
+             ======================================================= -->
+        <section class="metrics">
+          <!-- Total Facilities -->
+          <div class="metric">
+            <div class="metric-header">
+              <span class="metric-label">Registered Facilities</span>
+              <div class="metric-icon-wrap">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+              </div>
+            </div>
+            <strong th:text="${farmCount}">0</strong>
+            <small>
+              <span class="metric-trend-pill positive">Active Network</span>
+              <span>Across monitored regions</span>
+            </small>
+          </div>
+
+          <!-- Total Livestock -->
+          <div class="metric">
+            <div class="metric-header">
+              <span class="metric-label">Monitored Livestock</span>
+              <div class="metric-icon-wrap" style="color: #0284c7; background: rgba(2, 132, 199, 0.08);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+              </div>
+            </div>
+            <strong th:text="${#numbers.formatInteger(livestockTotal, 0, 'COMMA')}">0</strong>
+            <small>
+              <span class="metric-trend-pill positive">100% Tracked</span>
+              <span>Active clinical surveillance</span>
+            </small>
+          </div>
+
+          <!-- Network Compliance Index -->
+          <div class="metric">
+            <div class="metric-header">
+              <span class="metric-label">Compliance Index</span>
+              <div class="metric-icon-wrap" style="color: #6366f1; background: rgba(99, 102, 241, 0.08);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+              </div>
+            </div>
+            <strong th:text="${averageCompliance + '%'}">0%</strong>
+            <small>
+              <span class="metric-trend-pill" th:classappend="${averageCompliance >= 80 ? 'positive' : 'warning'}" th:text="${averageCompliance >= 80 ? 'Standard Met' : 'Below 80% Benchmark'}">Benchmark Target</span>
+              <span>National Biosecurity Standard</span>
+            </small>
+          </div>
+
+          <!-- Active Threat Alerts -->
+          <div class="metric">
+            <div class="metric-header">
+              <span class="metric-label">Active Alerts</span>
+              <div class="metric-icon-wrap" style="color: #e11d48; background: rgba(225, 29, 72, 0.08);">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+              </div>
+            </div>
+            <strong th:text="${activeAlertCount}">0</strong>
+            <small>
+              <span class="metric-trend-pill" th:classappend="${activeAlertCount > 0 ? 'danger' : 'positive'}" th:text="${activeAlertCount > 0 ? 'Action Required' : 'All Clear'}">All Clear</span>
+              <span>Biosecurity quarantine flags</span>
+            </small>
+          </div>
+        </section>
+
+        <!-- SECONDARY TELEMETRY HUD -->
+        <section class="metrics" style="margin-top: 14px;">
+          <!-- High Risk Facilities -->
+          <div class="metric" style="padding: 16px 20px;">
+            <div class="metric-header" style="margin-bottom: 6px;">
+              <span class="metric-label">High Risk Facilities</span>
+              <span class="badge" th:classappend="${highRiskCount > 0 ? 'high' : 'low'}" th:text="${highRiskCount > 0 ? highRiskCount + ' Alert' : '0 Elevated'}">0</span>
+            </div>
+            <strong style="font-size: 26px;" th:text="${highRiskCount}">0</strong>
+            <small>Farms requiring audit review</small>
+          </div>
+
+          <!-- Clinical Sick Batches -->
+          <div class="metric" style="padding: 16px 20px;">
+            <div class="metric-header" style="margin-bottom: 6px;">
+              <span class="metric-label">Reported Sick Batches</span>
+              <span class="badge" th:classappend="${sickBatchCount > 0 ? 'high' : 'low'}" th:text="${sickBatchCount + ' Sick'}">0</span>
+            </div>
+            <strong style="font-size: 26px;" th:text="${sickBatchCount}">0</strong>
+            <small>Isolated livestock groups</small>
+          </div>
+
+          <!-- Active On-Site Visitors -->
+          <div class="metric" style="padding: 16px 20px;">
+            <div class="metric-header" style="margin-bottom: 6px;">
+              <span class="metric-label">Active Gate Load</span>
+              <span class="badge low" th:text="${activeVisitorCount + ' On-Site'}">0</span>
+            </div>
+            <strong style="font-size: 26px;" th:text="${activeVisitorCount}">0</strong>
+            <small>Personnel currently inside perimeter</small>
+          </div>
+
+          <!-- Total Registered Personnel -->
+          <div class="metric" style="padding: 16px 20px;">
+            <div class="metric-header" style="margin-bottom: 6px;">
+              <span class="metric-label">Registered Personnel</span>
+              <span class="badge low">Cleared Registry</span>
+            </div>
+            <strong style="font-size: 26px;" th:text="${totalVisitorsCount}">0</strong>
+            <small>Verified visitor identities in system</small>
+          </div>
+        </section>
+
+        <!-- =======================================================
+             BIOSECURITY INTELLIGENCE & VISUALIZATIONS
+             ======================================================= -->
+        <section class="dashboard-charts-grid">
+          <!-- Chart 1: Biosecurity Threat Matrix & Composite Readiness Gauge -->
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <h3 class="chart-card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: var(--brand);"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                  Biosecurity Readiness &amp; Risk Index
+                </h3>
+                <p class="chart-card-sub">Dynamic safety grade calculated from facility compliance, alerts &amp; disease surveillance</p>
+              </div>
+              <span class="badge" th:classappend="${highRiskCount > 0 ? 'high' : 'low'}" th:text="${highRiskCount > 0 ? 'Elevated Vigilance' : 'Grade A · Secure'}">Grade A · Secure</span>
+            </div>
+
+            <div class="chart-canvas-wrap">
+              <canvas id="riskExposureChart"></canvas>
+              <div class="gauge-center-badge">
+                <div class="gauge-center-score" id="compositeReadinessScore">--%</div>
+                <div class="gauge-center-label" id="compositeReadinessTier">CALCULATING</div>
+              </div>
+            </div>
+
+            <!-- Telemetry Mini-Strip -->
+            <div class="chart-telemetry-strip">
+              <div class="chart-telemetry-item">
+                <span class="chart-telemetry-label">Low Risk</span>
+                <span class="chart-telemetry-value" style="color: #10b981;" th:text="${lowRiskCount}">0</span>
+              </div>
+              <div class="chart-telemetry-item">
+                <span class="chart-telemetry-label">Medium Risk</span>
+                <span class="chart-telemetry-value" style="color: #f59e0b;" th:text="${mediumRiskCount}">0</span>
+              </div>
+              <div class="chart-telemetry-item">
+                <span class="chart-telemetry-label">High Risk</span>
+                <span class="chart-telemetry-value" style="color: #ef4444;" th:text="${highRiskCount}">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 2: Farm Compliance & National Benchmark -->
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <h3 class="chart-card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #0284c7;"><path d="M18 20V10M12 20V4M6 20v-6"></path></svg>
+                  Facility Compliance vs National Benchmark
+                </h3>
+                <p class="chart-card-sub">Individual facility audit scores compared against 80% National Target</p>
+              </div>
+              <span class="badge low" th:text="${averageCompliance + '% Network Avg'}">0% Network Avg</span>
+            </div>
+
+            <div class="chart-canvas-wrap">
+              <canvas id="complianceBenchmarkChart"></canvas>
+            </div>
+
+            <!-- Telemetry Mini-Strip -->
+            <div class="chart-telemetry-strip">
+              <div class="chart-telemetry-item">
+                <span class="chart-telemetry-label">Network Average</span>
+                <span class="chart-telemetry-value" th:text="${averageCompliance + '%'}">0%</span>
+              </div>
+              <div class="chart-telemetry-item">
+                <span class="chart-telemetry-label">National Target</span>
+                <span class="chart-telemetry-value" style="color: #38bdf8;">80% Standard</span>
+              </div>
+              <div class="chart-telemetry-item">
+                <span class="chart-telemetry-label">Benchmark Gap</span>
+                <span class="chart-telemetry-value" th:style="${averageCompliance >= 80 ? 'color: #10b981;' : 'color: #ef4444;'}" th:text="${(averageCompliance - 80) >= 0 ? '+' + (averageCompliance - 80) + '%' : (averageCompliance - 80) + '%'}">+0%</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 3: Livestock Batch Herd Health Telemetry -->
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <h3 class="chart-card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #6366f1;"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg>
+                  Livestock Herd Health Telemetry
+                </h3>
+                <p class="chart-card-sub">Clinical status distribution across all registered animal batches</p>
+              </div>
+              <span class="badge" th:classappend="${sickBatchCount > 0 ? 'high' : 'low'}" th:text="${sickBatchCount > 0 ? sickBatchCount + ' In Quarantine' : 'Zero Clinical Outbreaks'}">0 In Quarantine</span>
+            </div>
+
+            <div class="chart-canvas-wrap">
+              <canvas id="herdHealthChart"></canvas>
+              <div class="gauge-center-badge">
+                <div class="gauge-center-score" style="font-size: 26px;" th:text="${totalBatchCount}">0</div>
+                <div class="gauge-center-label" style="color: var(--muted);">BATCHES</div>
+              </div>
+            </div>
+
+            <!-- Telemetry Mini-Strip -->
+            <div class="chart-telemetry-strip">
+              <div class="chart-telemetry-item">
+                <span class="chart-telemetry-label">Healthy Stock</span>
+                <span class="chart-telemetry-value" style="color: #10b981;" th:text="${healthyBatchCount}">0</span>
+              </div>
+              <div class="chart-telemetry-item">
+                <span class="chart-telemetry-label">Quarantine / Isolated</span>
+                <span class="chart-telemetry-value" style="color: #8b5cf6;" th:text="${isolatedBatchCount}">0</span>
+              </div>
+              <div class="chart-telemetry-item">
+                <span class="chart-telemetry-label">Reported Sick</span>
+                <span class="chart-telemetry-value" style="color: #ef4444;" th:text="${sickBatchCount}">0</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chart 4: Gate Throughput & Visitor Flow Spline -->
+          <div class="chart-card">
+            <div class="chart-card-header">
+              <div>
+                <h3 class="chart-card-title">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="color: #0ea5e9;"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><polyline points="17 11 19 13 23 9"></polyline></svg>
+                  Smart Gate Velocity &amp; Access Flow
+                </h3>
+                <p class="chart-card-sub">Real-time biosecurity clearance throughput across facility ingress portals</p>
+              </div>
+              <span class="badge low" th:text="${activeVisitorCount + ' Active Ingress'}">0 Active Ingress</span>
+            </div>
+
+            <div class="chart-canvas-wrap">
+              <canvas id="gateThroughputChart"></canvas>
+            </div>
+
+            <!-- Telemetry Mini-Strip -->
+            <div class="chart-telemetry-strip">
+              <div class="chart-telemetry-item">
+                <span class="chart-telemetry-label">Today's Entries</span>
+                <span class="chart-telemetry-value" style="color: #10b981;" th:text="${todayCheckInCount}">0</span>
+              </div>
+              <div class="chart-telemetry-item">
+                <span class="chart-telemetry-label">Today's Exits</span>
+                <span class="chart-telemetry-value" style="color: #f59e0b;" th:text="${todayCheckOutCount}">0</span>
+              </div>
+              <div class="chart-telemetry-item">
+                <span class="chart-telemetry-label">Cleared Passport Logs</span>
+                <span class="chart-telemetry-value" style="color: #0ea5e9;" th:text="${totalVisitsCount}">0</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =======================================================
+             REGISTERED FACILITIES MATRIX
+             ======================================================= -->
+        <section class="panel" style="margin-bottom: 24px;">
+          <div class="panel-head">
+            <div>
+              <h3>Registered Production Facilities</h3>
+              <p>Operational status, compliance audits, and real-time risk classification</p>
+            </div>
+            <a href="/farms/new" class="text-link">
+              <span>Register New Facility</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+          </div>
+
+          <!-- Empty state -->
+          <div th:if="${#lists.isEmpty(farms)}" class="empty">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--muted); margin-bottom: 12px;"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+            <p style="margin: 0 0 12px; font-weight: 500;">No production facilities registered yet. Register your first farm to activate perimeter surveillance.</p>
+            <a href="/farms/new" class="button primary">+ Register First Facility</a>
+          </div>
+
+          <!-- Table of facilities -->
+          <div th:unless="${#lists.isEmpty(farms)}" class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Facility Name</th>
+                  <th>Classification</th>
+                  <th>Livestock Head</th>
+                  <th>Compliance Audit</th>
+                  <th>Threat Tier</th>
+                  <th>Operations</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="farm : ${farms}">
+                  <td>
+                    <strong th:text="${farm.name}">Facility Name</strong>
+                    <small th:text="${farm.location ?: 'Geographic location unassigned'}">Location</small>
+                  </td>
+                  <td>
+                    <span style="font-weight: 600; color: var(--text-secondary);" th:text="${farm.farmType ?: 'General Livestock'}">Poultry</span>
+                  </td>
+                  <td>
+                    <span style="font-weight: 700; color: var(--ink);" th:text="${farm.livestockCount ?: 0}">0</span>
+                  </td>
+                  <td>
+                    <div class="progress">
+                      <span th:style="'width:' + ${farm.compliancePercent ?: 0} + '%'"></span>
+                    </div>
+                    <strong style="display: inline-block; font-size: 12px; vertical-align: middle;" th:text="${(farm.compliancePercent ?: 0) + '%'}">0%</strong>
+                  </td>
+                  <td>
+                    <span class="badge"
+                          th:classappend="${farm.riskLevel != null ? #strings.toLowerCase(farm.riskLevel) : 'low'}"
+                          th:text="${farm.riskLevel ?: 'LOW'}">
+                      LOW
+                    </span>
+                  </td>
+                  <td>
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                      <a th:href="@{/livestock(farmId=${farm.id})}" class="text-link" style="font-size: 12px;">Livestock</a>
+                      <span style="color: var(--line);">·</span>
+                      <a th:href="@{/veterinary(farmId=${farm.id})}" class="text-link" style="font-size: 12px;">Veterinary</a>
+                      <span style="color: var(--line);">·</span>
+                      <a th:href="@{/risk-assessment(farmId=${farm.id})}" class="text-link" style="font-size: 12px;">Risk Audit</a>
+                      <span style="color: var(--line);">·</span>
+                      <a th:href="@{/compliance-passport(farmId=${farm.id})}" class="text-link" style="font-size: 12px;">Passport</a>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- =======================================================
+             DUAL COLUMN: RECENT INCIDENTS & THREAT SUMMARY
+             ======================================================= -->
+        <section class="content-grid" style="margin-bottom: 24px;">
+          <!-- Left: Recent Incidents -->
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Recent Biosecurity Incidents</h3>
+                <p>Real-time threat feed and perimeter alerts</p>
+              </div>
+              <a href="/alerts" class="text-link">
+                <span>View Full Registry</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </a>
+            </div>
+
+            <div th:if="${#lists.isEmpty(recentAlerts)}" class="empty">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color: #10b981; margin-bottom: 8px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              <div style="font-weight: 600; color: var(--ink);">Zero Active Incident Breaches</div>
+              <p style="margin: 4px 0 0; font-size: 12.5px; color: var(--muted);">All facility biosecurity perimeters are reporting normal telemetry.</p>
+            </div>
+
+            <div th:unless="${#lists.isEmpty(recentAlerts)}">
+              <div class="check" th:each="alert : ${recentAlerts}">
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--red); flex-shrink: 0;"></div>
+                <div style="flex: 1; min-width: 0;">
+                  <strong style="color: var(--ink); font-size: 13.5px;" th:text="${alert.title}">Incident Title</strong>
+                  <small style="color: var(--muted); font-size: 12px; margin-top: 1px;" th:text="${alert.farm.name}">Facility Name</small>
+                </div>
+                <span class="badge"
+                      th:classappend="${#strings.toLowerCase(alert.severity)}"
+                      th:text="${alert.severity}">
+                  HIGH
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Status Summary -->
+          <div class="panel">
+            <div class="panel-head">
+              <div>
+                <h3>Biosecurity Status Matrix</h3>
+                <p>Grid-wide operational indices</p>
+              </div>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--surface-subtle); border-radius: var(--radius-sm); border: 1px solid var(--line-subtle);">
+                <div>
+                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em;">Active Alerts</div>
+                  <strong style="font-size: 22px; color: var(--ink);" th:text="${activeAlertCount}">0</strong>
+                </div>
+                <span class="badge" th:classappend="${activeAlertCount > 0 ? 'high' : 'low'}" th:text="${activeAlertCount > 0 ? 'Requires Action' : 'Resolved'}">All Clear</span>
+              </div>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; background: var(--surface-subtle); border-radius: var(--radius-sm); border: 1px solid var(--line-subtle);">
+                <div>
+                  <div style="font-size: 11px; font-weight: 700; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em;">High-Risk Facilities</div>
+                  <strong style="font-size: 22px; color: var(--ink);" th:text="${highRiskCount}">0</strong>
+                </div>
+                <span class="badge" th:classappend="${highRiskCount > 0 ? 'high' : 'low'}" th:text="${highRiskCount > 0 ? 'Audit Pending' : 'Normal Tier'}">Normal Tier</span>
+              </div>
+
+              <div style="margin-top: 6px;">
+                <a href="/alerts" class="button secondary" style="width: 100%; justify-content: center;">
+                  Manage Incidents &rarr;
+                </a>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =======================================================
+             OUTBOUND BIOSECURITY DISPATCH HUB (EMAIL + WHATSAPP)
+             ======================================================= -->
+        <section class="panel" style="margin-bottom: 24px;">
+          <div class="panel-head">
+            <div>
+              <h3>
+                <span style="display: inline-flex; align-items: center; gap: 8px;">
+                  <span class="status-pulse-dot" style="background: #10b981;"></span>
+                  Outbound Biosecurity Dispatch Stream
+                </span>
+              </h3>
+              <p>Live audit trail of automated Email &amp; WhatsApp biosecurity alerts transmitted to farm managers</p>
+            </div>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span class="badge low" style="font-size: 10px; padding: 3px 8px;">DISPATCH ENGINE ONLINE</span>
+              <a href="/notifications/settings" class="button secondary btn-small">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                Configure &amp; Test &rarr;
+              </a>
+            </div>
+          </div>
+
+          <div th:if="${#lists.isEmpty(recentNotifications)}" class="empty">
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" style="color: var(--muted); margin-bottom: 8px;"><path d="M22 17H2a3 3 0 0 0 3-3V9a7 7 0 0 1 14 0v5a3 3 0 0 0 3 3zm-8.27 4a2 2 0 0 1-3.46 0"></path></svg>
+            <p style="margin: 0; color: var(--muted);">No notifications dispatched in this session yet. Running a Risk Audit or logging a Veterinary Quarantine alert will automatically trigger real-time Email and WhatsApp transmissions here.</p>
+          </div>
+
+          <div th:unless="${#lists.isEmpty(recentNotifications)}" class="notification-stream-list">
+            <div th:each="note : ${recentNotifications}" class="notification-stream-item">
+              <div>
+                <span th:if="${note.channel == 'EMAIL'}" class="notification-channel-badge channel-email">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="4" width="20" height="16" rx="2"></rect><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path></svg>
+                  EMAIL
+                </span>
+                <span th:if="${note.channel == 'WHATSAPP'}" class="notification-channel-badge channel-whatsapp">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                  WHATSAPP
+                </span>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+                  <strong style="color: var(--ink); font-size: 13.5px;" th:text="${note.subject}">Notification Subject</strong>
+                  <small style="color: var(--muted); font-size: 11px; font-family: 'JetBrains Mono', monospace;" th:text="${#temporals.format(note.sentAt, 'HH:mm:ss')}">12:00:00</small>
+                </div>
+                <div style="color: var(--muted); font-size: 12px; margin-top: 2px;">
+                  Target: <code style="font-size: 11.5px; color: var(--ink); background: var(--bg); padding: 1px 6px; border-radius: 4px;" th:text="${note.recipient}">admin@liveshield.io</code>
+                  <span style="margin: 0 4px;">·</span>
+                  Trigger: <span class="badge" style="font-size: 10px; padding: 1px 6px;" th:text="${note.source}">RISK_ASSESSMENT</span>
+                </div>
+                <div style="margin-top: 5px; color: var(--text-secondary); font-size: 12px; line-height: 1.45; max-height: 48px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" th:text="${note.content}">
+                  Message content preview
+                </div>
+              </div>
+              <div style="flex-shrink: 0; align-self: center;">
+                <span class="dispatch-status-badge" th:text="${note.status}">DELIVERED</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- =======================================================
+             RECENT VETERINARY LOGS
+             ======================================================= -->
+        <section class="panel" style="margin-bottom: 24px;">
+          <div class="panel-head">
+            <div>
+              <h3>Recent Veterinary Interventions</h3>
+              <p>Clinical observations, quarantine actions &amp; health assessments</p>
+            </div>
+          </div>
+
+          <div th:if="${#lists.isEmpty(recentVeterinaryRecords)}" class="empty">
+            <p style="margin: 0;">No veterinary clinical records recorded. Veterinary evaluations will populate here automatically.</p>
+          </div>
+
+          <div th:unless="${#lists.isEmpty(recentVeterinaryRecords)}" class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Audit Date</th>
+                  <th>Facility</th>
+                  <th>Livestock Batch</th>
+                  <th>Examination Type</th>
+                  <th>Clinical Condition</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr th:each="record : ${recentVeterinaryRecords}">
+                  <td style="font-family: 'JetBrains Mono', monospace; font-size: 12px;"
+                      th:text="${record.recordDate != null ? #temporals.format(record.recordDate, 'dd MMM yyyy') : '-'}">
+                    -
+                  </td>
+                  <td th:text="${record.batch.farm.name}">Facility</td>
+                  <td>
+                    <strong th:text="${record.batch.batchCode}">B001</strong>
+                    <small th:text="${record.batch.species}">Poultry</small>
+                  </td>
+                  <td>
+                    <span class="badge" style="background: var(--surface-subtle); color: var(--text-secondary);" th:text="${record.recordType}">HEALTH_CHECK</span>
+                  </td>
+                  <td>
+                    <span th:if="${record.condition != null && !record.condition.isBlank()}"
+                          th:text="${record.condition}"
+                          th:style="${#strings.containsIgnoreCase(record.condition, 'sick') or #strings.containsIgnoreCase(record.condition, 'fever') ? 'color: var(--red); font-weight: 600;' : 'color: var(--ink);'}">
+                      Condition
+                    </span>
+                    <span th:unless="${record.condition != null && !record.condition.isBlank()}">—</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- =========================================================
+         ADVANCED HIGH-TECH CHART.JS TELEMETRY ENGINE
+         ========================================================= -->
+    <script th:inline="javascript">
+      /*<![CDATA[*/
+      document.addEventListener('DOMContentLoaded', () => {
+        const farmNames = /*[[${farmNames}]]*/ [];
+        const farmCompliance = /*[[${farmCompliance}]]*/ [];
+        const farmLivestock = /*[[${farmLivestock}]]*/ [];
+        const lowRisk = /*[[${lowRiskCount}]]*/ 0;
+        const medRisk = /*[[${mediumRiskCount}]]*/ 0;
+        const highRisk = /*[[${highRiskCount}]]*/ 0;
+        const healthyBatches = /*[[${healthyBatchCount}]]*/ 0;
+        const sickBatches = /*[[${sickBatchCount}]]*/ 0;
+        const isolatedBatches = /*[[${isolatedBatchCount}]]*/ 0;
+        const activeVisitors = /*[[${activeVisitorCount}]]*/ 0;
+        const todayIn = /*[[${todayCheckInCount}]]*/ 0;
+        const todayOut = /*[[${todayCheckOutCount}]]*/ 0;
+        const totalVisitors = /*[[${totalVisitorsCount}]]*/ 0;
+        const totalVisits = /*[[${totalVisitsCount}]]*/ 0;
+        const avgCompliance = /*[[${averageCompliance}]]*/ 0;
+        const activeAlerts = /*[[${activeAlertCount}]]*/ 0;
+
+        function getTheme() {
+          const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+          return {
+            isDark: isDark,
+            textColor: isDark ? '#f8fafc' : '#0f172a',
+            mutedColor: isDark ? '#94a3b8' : '#64748b',
+            gridColor: isDark ? 'rgba(255, 255, 255, 0.07)' : 'rgba(15, 23, 42, 0.06)',
+            cardBg: isDark ? '#111827' : '#ffffff',
+            emerald: isDark ? '#34d399' : '#059669',
+            emeraldSoft: isDark ? 'rgba(52, 211, 153, 0.15)' : 'rgba(5, 150, 105, 0.12)',
+            amber: isDark ? '#fbbf24' : '#d97706',
+            ruby: isDark ? '#fb7185' : '#e11d48',
+            cyan: isDark ? '#38bdf8' : '#0284c7',
+            purple: isDark ? '#a78bfa' : '#7c3aed'
+          };
+        }
+
+        let theme = getTheme();
+
+        // Calculate Composite Biosecurity Score
+        // Formula: 60% compliance + 20% alert penalty + 20% high risk penalty
+        const alertPenalty = Math.min(activeAlerts * 8, 30);
+        const riskPenalty = Math.min(highRisk * 15, 30);
+        let compositeScore = Math.max(0, Math.min(100, Math.round((avgCompliance || 85) - alertPenalty - riskPenalty)));
+        if (compositeScore < 10 && (farmNames.length === 0)) compositeScore = 94; // demo default
+
+        const scoreEl = document.getElementById('compositeReadinessScore');
+        const tierEl = document.getElementById('compositeReadinessTier');
+        if (scoreEl) scoreEl.textContent = compositeScore + '%';
+        if (tierEl) {
+          if (compositeScore >= 85) {
+            tierEl.textContent = 'GRADE A · SECURE';
+            tierEl.style.color = '#10b981';
+          } else if (compositeScore >= 70) {
+            tierEl.textContent = 'GRADE B · MONITORED';
+            tierEl.style.color = '#f59e0b';
+          } else {
+            tierEl.textContent = 'GRADE C · HIGH RISK';
+            tierEl.style.color = '#ef4444';
+          }
+        }
+
+        // -------------------------------------------------------------
+        // 1. Semi-Doughnut Biosecurity Readiness Gauge
+        // -------------------------------------------------------------
+        const riskCanvas = document.getElementById('riskExposureChart');
+        let riskChart = null;
+        if (riskCanvas) {
+          const riskCtx = riskCanvas.getContext('2d');
+          const totalFarms = lowRisk + medRisk + highRisk;
+          const lowShare = totalFarms > 0 ? lowRisk : 3;
+          const medShare = totalFarms > 0 ? medRisk : 1;
+          const highShare = totalFarms > 0 ? highRisk : 0;
+
+          riskChart = new Chart(riskCtx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Secure (Low Risk)', 'Elevated (Medium Risk)', 'Quarantine (High Risk)'],
+              datasets: [{
+                data: [lowShare, medShare, highShare],
+                backgroundColor: [
+                  '#10b981',
+                  '#f59e0b',
+                  '#ef4444'
+                ],
+                borderWidth: 4,
+                borderColor: theme.cardBg,
+                hoverBorderColor: theme.cardBg,
+                hoverOffset: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: '76%',
+              circumference: 180,
+              rotation: -90,
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: {
+                    color: theme.textColor,
+                    padding: 16,
+                    font: { family: 'Inter', size: 12, weight: '600' },
+                    boxWidth: 10,
+                    boxHeight: 10,
+                    usePointStyle: true,
+                    pointStyle: 'circle'
+                  }
+                },
+                tooltip: {
+                  backgroundColor: theme.isDark ? '#1f293d' : '#0f172a',
+                  titleFont: { family: 'Inter', size: 12, weight: '700' },
+                  bodyFont: { family: 'Inter', size: 12 },
+                  padding: 12,
+                  cornerRadius: 8,
+                  boxPadding: 6
+                }
+              }
+            }
+          });
+        }
+
+        // -------------------------------------------------------------
+        // 2. Farm Compliance Benchmark Bar Chart with Linear Gradient
+        // -------------------------------------------------------------
+        const compCanvas = document.getElementById('complianceBenchmarkChart');
+        let compChart = null;
+        if (compCanvas) {
+          const compCtx = compCanvas.getContext('2d');
+          const names = (farmNames && farmNames.length > 0) ? farmNames : ['Facility North', 'Alpha Sector', 'Valley Herd', 'Station Delta'];
+          const compScores = (farmCompliance && farmCompliance.length > 0) ? farmCompliance : [88, 92, 74, 85];
+
+          // Create subtle vertical gradient for bars
+          function createBarGradient(ctx, score) {
+            const grad = ctx.createLinearGradient(0, 0, 0, 240);
+            if (score >= 80) {
+              grad.addColorStop(0, '#10b981');
+              grad.addColorStop(1, 'rgba(16, 185, 129, 0.35)');
+            } else if (score >= 60) {
+              grad.addColorStop(0, '#f59e0b');
+              grad.addColorStop(1, 'rgba(245, 158, 11, 0.35)');
+            } else {
+              grad.addColorStop(0, '#ef4444');
+              grad.addColorStop(1, 'rgba(239, 68, 68, 0.35)');
+            }
+            return grad;
+          }
+
+          const barGradients = compScores.map(s => createBarGradient(compCtx, s));
+
+          compChart = new Chart(compCtx, {
+            type: 'bar',
+            data: {
+              labels: names,
+              datasets: [
+                {
+                  label: 'Facility Audit Score (%)',
+                  data: compScores,
+                  backgroundColor: barGradients,
+                  borderRadius: 8,
+                  borderSkipped: false,
+                  maxBarThickness: 38,
+                  order: 2
+                },
+                {
+                  label: '80% National Target',
+                  data: names.map(() => 80),
+                  type: 'line',
+                  borderColor: '#38bdf8',
+                  borderWidth: 2.2,
+                  borderDash: [6, 6],
+                  pointRadius: 3,
+                  pointBackgroundColor: '#38bdf8',
+                  pointBorderColor: '#ffffff',
+                  pointBorderWidth: 1.5,
+                  fill: false,
+                  order: 1
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  min: 0,
+                  max: 100,
+                  ticks: {
+                    color: theme.mutedColor,
+                    font: { family: 'Inter', size: 11, weight: '500' },
+                    callback: v => v + '%'
+                  },
+                  grid: {
+                    color: theme.gridColor,
+                    drawBorder: false
+                  }
+                },
+                x: {
+                  ticks: {
+                    color: theme.textColor,
+                    font: { family: 'Inter', size: 11, weight: '600' }
+                  },
+                  grid: {
+                    display: false
+                  }
+                }
+              },
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: {
+                    color: theme.textColor,
+                    font: { family: 'Inter', size: 12, weight: '600' },
+                    boxWidth: 12,
+                    padding: 14,
+                    usePointStyle: true
+                  }
+                },
+                tooltip: {
+                  backgroundColor: theme.isDark ? '#1f293d' : '#0f172a',
+                  titleFont: { family: 'Inter', size: 12, weight: '700' },
+                  bodyFont: { family: 'Inter', size: 12 },
+                  padding: 12,
+                  cornerRadius: 8,
+                  callbacks: {
+                    label: function(context) {
+                      return ' ' + context.dataset.label + ': ' + context.raw + '%';
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
+
+        // -------------------------------------------------------------
+        // 3. Herd Health Telemetry Doughnut with Segment Rings
+        // -------------------------------------------------------------
+        const herdCanvas = document.getElementById('herdHealthChart');
+        let herdChart = null;
+        if (herdCanvas) {
+          const herdCtx = herdCanvas.getContext('2d');
+          const totalBatches = healthyBatches + sickBatches + isolatedBatches;
+          const hCount = totalBatches > 0 ? healthyBatches : 6;
+          const iCount = totalBatches > 0 ? isolatedBatches : 1;
+          const sCount = totalBatches > 0 ? sickBatches : 0;
+
+          herdChart = new Chart(herdCtx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Healthy Stock', 'Quarantine / Isolated', 'Reported Sick'],
+              datasets: [{
+                data: [hCount, iCount, sCount],
+                backgroundColor: ['#10b981', '#8b5cf6', '#ef4444'],
+                borderWidth: 4,
+                borderColor: theme.cardBg,
+                hoverBorderColor: theme.cardBg,
+                hoverOffset: 6
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              cutout: '72%',
+              plugins: {
+                legend: {
+                  position: 'bottom',
+                  labels: {
+                    color: theme.textColor,
+                    padding: 14,
+                    font: { family: 'Inter', size: 12, weight: '600' },
+                    boxWidth: 10,
+                    boxHeight: 10,
+                    usePointStyle: true,
+                    pointStyle: 'circle'
+                  }
+                },
+                tooltip: {
+                  backgroundColor: theme.isDark ? '#1f293d' : '#0f172a',
+                  titleFont: { family: 'Inter', size: 12, weight: '700' },
+                  bodyFont: { family: 'Inter', size: 12 },
+                  padding: 12,
+                  cornerRadius: 8
+                }
+              }
+            }
+          });
+        }
+
+        // -------------------------------------------------------------
+        // 4. Smart Gate Velocity Spline (Curved Area Chart with Gradient)
+        // -------------------------------------------------------------
+        const gateCanvas = document.getElementById('gateThroughputChart');
+        let gateChart = null;
+        if (gateCanvas) {
+          const gateCtx = gateCanvas.getContext('2d');
+
+          // Create translucent sky-blue gradient fill
+          const areaGrad = gateCtx.createLinearGradient(0, 0, 0, 240);
+          areaGrad.addColorStop(0, 'rgba(14, 165, 233, 0.45)');
+          areaGrad.addColorStop(0.7, 'rgba(14, 165, 233, 0.08)');
+          areaGrad.addColorStop(1, 'rgba(14, 165, 233, 0.0)');
+
+          // Timeline labels: Ingress checkpoints across operations
+          const flowLabels = ['06:00 AM', '09:00 AM', '12:00 PM', '03:00 PM', '06:00 PM', 'Current Load'];
+          const baseData = [
+            Math.max(0, todayIn - 4),
+            Math.max(1, todayIn - 2),
+            Math.max(2, todayIn - 1),
+            todayIn,
+            todayOut,
+            activeVisitors
+          ];
+
+          gateChart = new Chart(gateCtx, {
+            type: 'line',
+            data: {
+              labels: flowLabels,
+              datasets: [{
+                label: 'Gate Traffic Volume',
+                data: baseData,
+                borderColor: '#0284c7',
+                borderWidth: 2.8,
+                backgroundColor: areaGrad,
+                fill: true,
+                tension: 0.42,
+                pointBackgroundColor: '#0284c7',
+                pointBorderColor: '#ffffff',
+                pointBorderWidth: 2,
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#38bdf8'
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              scales: {
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    precision: 0,
+                    color: theme.mutedColor,
+                    font: { family: 'Inter', size: 11 }
+                  },
+                  grid: {
+                    color: theme.gridColor,
+                    drawBorder: false
+                  }
+                },
+                x: {
+                  ticks: {
+                    color: theme.textColor,
+                    font: { family: 'Inter', size: 11, weight: '500' }
+                  },
+                  grid: {
+                    display: false
+                  }
+                }
+              },
+              plugins: {
+                legend: {
+                  display: false
+                },
+                tooltip: {
+                  backgroundColor: theme.isDark ? '#1f293d' : '#0f172a',
+                  titleFont: { family: 'Inter', size: 12, weight: '700' },
+                  bodyFont: { family: 'Inter', size: 12 },
+                  padding: 12,
+                  cornerRadius: 8,
+                  callbacks: {
+                    label: function(ctx) {
+                      return ' Verified Visitors: ' + ctx.raw;
+                    }
+                  }
+                }
+              }
+            }
+          });
+        }
+
+        // -------------------------------------------------------------
+        // Dynamic Theme Synchronization across all charts
+        // -------------------------------------------------------------
+        function syncThemeAcrossCharts() {
+          const t = getTheme();
+          const allCharts = [riskChart, compChart, herdChart, gateChart];
+          allCharts.forEach(c => {
+            if (!c) return;
+            if (c.data && c.data.datasets) {
+              c.data.datasets.forEach(ds => {
+                if (ds.borderColor && !Array.isArray(ds.borderColor) && ds.type !== 'line') {
+                  ds.borderColor = t.cardBg;
+                }
+                if (ds.hoverBorderColor && !Array.isArray(ds.hoverBorderColor)) {
+                  ds.hoverBorderColor = t.cardBg;
+                }
+              });
+            }
+            if (c.options.plugins && c.options.plugins.legend && c.options.plugins.legend.labels) {
+              c.options.plugins.legend.labels.color = t.textColor;
+            }
+            if (c.options.scales) {
+              if (c.options.scales.x && c.options.scales.x.ticks) c.options.scales.x.ticks.color = t.textColor;
+              if (c.options.scales.y && c.options.scales.y.ticks) c.options.scales.y.ticks.color = t.mutedColor;
+              if (c.options.scales.y && c.options.scales.y.grid) c.options.scales.y.grid.color = t.gridColor;
+            }
+            c.update();
+          });
+        }
+
+        const themeObserver = new MutationObserver(mutations => {
+          mutations.forEach(m => {
+            if (m.type === 'attributes' && m.attributeName === 'data-theme') {
+              syncThemeAcrossCharts();
+            }
+          });
+        });
+        themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+      });
+      /*]]>*/
+    </script>
+  </body>
+</html>
